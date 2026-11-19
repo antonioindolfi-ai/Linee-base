@@ -186,8 +186,13 @@ code { font-family: var(--font-mono); font-size: .92em; }
   <section class="panel" id="results" hidden>
     <div class="row" style="justify-content: space-between;">
       <h2>Classifica su tutti i calendari</h2>
-      <button type="button" id="copy">Copia tabella</button>
+      <div class="row">
+        <button type="button" id="xlsx">Esporta Excel</button>
+        <button type="button" id="pdf">Esporta PDF</button>
+        <button type="button" id="copy">Copia tabella</button>
+      </div>
     </div>
+    <p class="status" id="exportinfo" role="status"></p>
     <div class="stats" id="runstats"></div>
     <p class="hint">Inserisci i punti della classifica reale per vedere quanti calendari avrebbero dato di più o di meno. Clicca una squadra per il dettaglio.</p>
     <div class="tablebox"><table id="summary"></table></div>
@@ -871,31 +876,306 @@ function renderDetail() {
   $('worstbox').querySelector('summary').textContent = `Il calendario più sfavorevole: ${acc.min[t]} punti`;
 }
 
-function calendarTable(t, perm) {
-  if (!perm) return '';
+/* Righe del calendario di una squadra per un'assegnazione perm (usate a schermo, in Excel e in PDF). */
+function calendarRows(t, perm) {
+  if (!perm) return [];
   const { model, scores, o, names, glabels, G } = state, N = model.N;
   const rounds = bergerRounds(N), slotOf = new Array(N);
   perm.forEach((team, s) => { slotOf[team] = s; });
-  let h = '<thead><tr><th class="name">Giornata</th><th class="name">Avversario</th><th>Campo</th><th>Fantapunti</th><th>Risultato</th><th>Punti</th><th>Progressivo</th></tr></thead><tbody>';
+  const out = [];
   let tot = 0;
   for (let g = 0; g < G; g++) {
     const pr = roundPairs(rounds, g).find(p => p[0] === slotOf[t] || p[1] === slotOf[t]);
     const home = pr[0] === slotOf[t], opp = perm[home ? pr[1] : pr[0]];
-    let row;
     if (opp === model.BYE) {
       tot += o.riposo;
-      row = `<td class="name">Riposo</td><td>–</td><td>${fmt(scores[t][g], 1)}</td><td>–</td><td>${o.riposo}</td>`;
+      out.push({ giornata: glabels[g], bye: true, opp: 'Riposo', fpMy: scores[t][g], pts: o.riposo, tot });
     } else {
-      const sh = home ? scores[t][g] + o.casa : scores[opp][g] + o.casa, sa = home ? scores[opp][g] : scores[t][g];
+      const sh = scores[home ? t : opp][g] + o.casa, sa = scores[home ? opp : t][g];
       const m = matchResult(sh, sa, o), my = home ? m.gh : m.ga, their = home ? m.ga : m.gh, p = home ? m.ph : m.pa;
       tot += p;
-      const cls = my > their ? 'W' : my === their ? 'D' : 'L';
-      const fpMy = home ? sh : sa, fpOpp = home ? sa : sh;
-      row = `<td class="name">${esc(names[opp])}</td><td>${home ? 'Casa' : 'Trasferta'}</td><td>${fmt(fpMy, 1)} – ${fmt(fpOpp, 1)}</td><td class="res ${cls}">${my} – ${their}</td><td>${p}</td>`;
+      out.push({ giornata: glabels[g], bye: false, opp: names[opp], home, fpMy: home ? sh : sa, fpOpp: home ? sa : sh,
+                 my, their, cls: my > their ? 'W' : my === their ? 'D' : 'L', pts: p, tot });
     }
-    h += `<tr><td class="name">${esc(glabels[g])}</td>${row}<td>${tot}</td></tr>`;
+  }
+  return out;
+}
+
+function calendarTable(t, perm) {
+  if (!perm) return '';
+  let h = '<thead><tr><th class="name">Giornata</th><th class="name">Avversario</th><th>Campo</th><th>Fantapunti</th><th>Risultato</th><th>Punti</th><th>Progressivo</th></tr></thead><tbody>';
+  for (const r of calendarRows(t, perm)) {
+    const mid = r.bye
+      ? `<td class="name">Riposo</td><td>–</td><td>${fmt(r.fpMy, 1)}</td><td>–</td>`
+      : `<td class="name">${esc(r.opp)}</td><td>${r.home ? 'Casa' : 'Trasferta'}</td><td>${fmt(r.fpMy, 1)} – ${fmt(r.fpOpp, 1)}</td><td class="res ${r.cls}">${r.my} – ${r.their}</td>`;
+    h += `<tr><td class="name">${esc(r.giornata)}</td>${mid}<td>${r.pts}</td><td>${r.tot}</td></tr>`;
   }
   return h + '</tbody>';
+}
+
+/* ---------- Esportazione Excel e PDF ---------- */
+const downloadsReady = (window.claude && typeof window.claude.use === 'function')
+  ? window.claude.use('downloads').catch(() => null) : Promise.resolve(null);
+
+function loadScript(src, ready) {
+  if (ready()) return Promise.resolve();
+  return new Promise((ok, ko) => {
+    const sc = document.createElement('script');
+    sc.src = src;
+    sc.onload = () => ready() ? ok() : ko(new Error('libreria non disponibile'));
+    sc.onerror = () => ko(new Error('impossibile caricare la libreria'));
+    document.head.appendChild(sc);
+  });
+}
+const loadJsPDF = () => loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js', () => window.jspdf && window.jspdf.jsPDF);
+
+function exportMsg(text, err) { const el = $('exportinfo'); el.className = 'status' + (err ? ' err' : ''); el.textContent = text; }
+
+async function offerFile(filename, data) {
+  const dl = await downloadsReady;
+  if (dl) {
+    try {
+      const res = await dl.save({ filename, data });
+      exportMsg(res.status === 'delivered' ? `${filename} inviato.` : `${filename} salvato.`);
+    } catch (e) {
+      const code = e && e.code;
+      exportMsg(code === 'declined' ? 'Salvataggio annullato.'
+        : code === 'rate_limited' ? 'C\'è già una richiesta di salvataggio aperta: riprova tra poco.'
+        : 'Il salvataggio dei file non è disponibile in questa vista.', code !== 'declined');
+    }
+    return;
+  }
+  // Pagina aperta fuori dal visualizzatore (es. file locale): download diretto
+  const blob = data instanceof Blob ? data : new Blob([data]);
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  exportMsg(`${filename} scaricato.`);
+}
+
+function exportBaseName() {
+  const d = new Date(), p = (x) => String(x).padStart(2, '0');
+  return `fantacalendari_${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
+/* Dati delle tabelle, comuni a Excel e PDF */
+function exportModel() {
+  const { names, acc, o, exact, total, G, model } = state, n = names.length, K = acc.count, W = acc.maxPts + 1;
+  const stats = names.map((nm, t) => ({ t, nm, ...teamStats(t) })).sort((a, b) => b.mean - a.mean || b.fp - a.fp);
+  const info = [
+    ['Squadre', n + (model.BYE >= 0 ? ' (+1 riposo)' : '')],
+    ['Giornate', G],
+    ['Calendari', exact ? `${fmtInt(K)} (tutti, ${model.N}!)` : `campione casuale di ${fmtInt(K)} su ${total > 1e15 ? total.toExponential(2) : fmtInt(total)} possibili`],
+    ['Gol', `1° gol a ${fmt(o.soglia, 1)}, poi uno ogni ${fmt(o.fascia, 1)} fantapunti`],
+    ['Punti', `vittoria ${o.pv}, pareggio ${o.pn}, sconfitta 0` + (model.BYE >= 0 ? `, riposo ${o.riposo}` : '')],
+    ['Bonus casa', fmt(o.casa, 1)],
+    ['Parità di punti', o.tb === 'fp' ? 'conta la somma dei fantapunti' : 'pari merito'],
+    ['Generato il', new Date().toLocaleString('it-IT')],
+  ];
+  return { names, acc, n, K, W, stats, info };
+}
+
+async function exportExcel() {
+  if (!state) return;
+  exportMsg('Preparazione del file Excel…');
+  try { await loadXLSX(); } catch (e) { exportMsg('Impossibile preparare il file Excel: ' + e.message, true); return; }
+  const X = window.XLSX, { names, acc, n, K, W, stats, info } = exportModel();
+  const wb = X.utils.book_new();
+  const pctFmt = '0.0%', decFmt = '0.00';
+  const addSheet = (name, aoa, cols, formats) => {
+    const ws = X.utils.aoa_to_sheet(aoa);
+    ws['!cols'] = cols.map(w => ({ wch: w }));
+    if (formats) for (let r = 1; r < aoa.length; r++) aoa[r].forEach((v, c) => {
+      const f = formats(c, r); const cell = ws[X.utils.encode_cell({ r, c })];
+      if (f && cell && cell.t === 'n') cell.z = f;
+    });
+    X.utils.book_append_sheet(wb, ws, name);
+  };
+
+  // 1. Classifica
+  const head1 = ['#', 'Squadra', 'Fantapunti', 'Punti medi', 'Dev. std', 'Min', 'Max', 'Pos. media', '1° posto', 'Ultimo posto', 'Punti reali', 'Differenza su media', 'Calendari con più punti', 'Calendari con meno punti'];
+  const rows1 = stats.map((r, i) => [i + 1, r.nm, r.fp, r.mean, r.sd, r.min, r.max, r.posMean, r.first, r.last,
+    r.real ?? '', r.real == null ? '' : r.real - r.mean, r.real == null ? '' : r.above, r.real == null ? '' : r.below]);
+  addSheet('Classifica', [head1, ...rows1], [4, 28, 11, 11, 9, 6, 6, 10, 10, 12, 11, 12, 14, 14],
+    (c) => [3, 4, 7, 11].includes(c) ? decFmt : [8, 9, 12, 13].includes(c) ? pctFmt : c === 2 ? '0.0' : null);
+
+  // 2. Posizioni
+  const head2 = ['Squadra', ...Array.from({ length: n }, (_, p) => `${p + 1}°`)];
+  const rows2 = stats.map(r => [r.nm, ...Array.from({ length: n }, (_, p) => acc.posHist[r.t * n + p] / K)]);
+  addSheet('Posizioni', [head2, ...rows2], [28, ...Array(n).fill(7)], (c) => c > 0 ? pctFmt : null);
+
+  // 3. Distribuzione dei punti
+  let lo = W, hi = 0;
+  for (let t = 0; t < n; t++) { lo = Math.min(lo, acc.min[t]); hi = Math.max(hi, acc.max[t]); }
+  const pts = Array.from({ length: hi - lo + 1 }, (_, i) => lo + i);
+  const head3 = ['Squadra', ...pts.map(p => `${p} pt`)];
+  const rows3 = stats.map(r => [r.nm, ...pts.map(p => acc.hist[r.t * W + p] / K)]);
+  addSheet('Distribuzione punti', [head3, ...rows3], [28, ...pts.map(() => 7)], (c) => c > 0 ? pctFmt : null);
+
+  // 4. Calendari più favorevoli e più sfavorevoli
+  const head4 = ['Squadra', 'Calendario', 'Giornata', 'Avversario', 'Campo', 'Fantapunti', 'Fantapunti avversario', 'Gol', 'Gol subiti', 'Punti', 'Progressivo'];
+  const rows4 = [];
+  for (const r of stats) for (const [label, perm] of [['Più favorevole', acc.maxPerm[r.t]], ['Più sfavorevole', acc.minPerm[r.t]]]) {
+    for (const c of calendarRows(r.t, perm)) rows4.push(c.bye
+      ? [r.nm, label, c.giornata, 'Riposo', '', c.fpMy, '', '', '', c.pts, c.tot]
+      : [r.nm, label, c.giornata, c.opp, c.home ? 'Casa' : 'Trasferta', c.fpMy, c.fpOpp, c.my, c.their, c.pts, c.tot]);
+  }
+  addSheet('Calendari estremi', [head4, ...rows4], [28, 16, 14, 28, 10, 11, 12, 6, 9, 7, 11], (c) => (c === 5 || c === 6) ? '0.0' : null);
+
+  // 5. Fantapunti usati e 6. Regole
+  addSheet('Fantapunti', [['Squadra', ...state.glabels], ...names.map((nm, t) => [nm, ...state.scores[t]])], [28, ...state.glabels.map(() => 12)], (c) => c > 0 ? '0.0' : null);
+  addSheet('Regole e metodo', [['Voce', 'Valore'], ...info,
+    ['Metodo', 'Tutte le assegnazioni delle squadre allo schema di Berger, ripetuto per le giornate giocate. Percentuali = quota di calendari.']], [18, 90]);
+
+  const buf = X.write(wb, { type: 'array', bookType: 'xlsx' });
+  await offerFile(exportBaseName() + '.xlsx', new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
+}
+
+/* Testo compatibile con i font standard del PDF (Latin-1) */
+const pdfSafe = (s) => String(s).replace(/[\u2000-\u200B\u202F]/g, ' ').replace(/[–—]/g, '-').replace(/[‘’]/g, "'").replace(/[“”]/g, '"').replace(/…/g, '...').replace(/[^\x20-\x7E\xA0-\xFF]/g, '?');
+
+async function exportPDF() {
+  if (!state) return;
+  exportMsg('Preparazione del PDF…');
+  try { await loadJsPDF(); } catch (e) { exportMsg('Impossibile preparare il PDF: ' + e.message, true); return; }
+  const { names, acc, n, K, stats, info } = exportModel();
+  const doc = new window.jspdf.jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+  const PW = 297, PH = 210, M = 12, green = [29, 107, 69], ink = [21, 32, 26], muted = [91, 106, 96], line = [214, 221, 213];
+  let y = M;
+
+  const newPage = () => { doc.addPage(); y = M; };
+  const heading = (txt, size = 14) => {
+    if (y > PH - M - 30) newPage();
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(size); doc.setTextColor(...ink);
+    doc.text(pdfSafe(txt), M, y + size * 0.35); y += size * 0.35 + 4;
+  };
+  const para = (txt, size = 8.5) => {
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(size); doc.setTextColor(...muted);
+    const lines = doc.splitTextToSize(pdfSafe(txt), PW - 2 * M);
+    for (const l of lines) { if (y > PH - M) newPage(); doc.text(l, M, y + 3); y += size * 0.45; }
+    y += 2;
+  };
+
+  /* Tabella con intestazione ripetuta a ogni pagina; il carattere si riduce se la tabella è troppo larga */
+  const table = (head, rows, opt = {}) => {
+    const align = opt.align || ((c) => c === 0 ? 'left' : 'right');
+    const avail = PW - 2 * M, pad = 1.6;
+    let fs = 8;
+    const widths = () => head.map((h, c) => {
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(fs);
+      let w = doc.getTextWidth(pdfSafe(h));
+      doc.setFont('helvetica', 'normal');
+      for (const r of rows) w = Math.max(w, doc.getTextWidth(pdfSafe(r[c] ?? '')));
+      return w + 2 * pad;
+    });
+    let ws = widths(), sum = ws.reduce((a, b) => a + b, 0);
+    while (sum > avail && fs > 5.5) { fs -= 0.5; ws = widths(); sum = ws.reduce((a, b) => a + b, 0); }
+    if (sum < avail && opt.stretch !== false) { const k = avail / sum; ws = ws.map(w => w * k); sum = avail; }
+    const rh = fs * 0.5 + 2.2;
+    const drawHead = () => {
+      doc.setFillColor(238, 242, 237); doc.rect(M, y, sum, rh, 'F');
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(fs); doc.setTextColor(...muted);
+      let x = M;
+      head.forEach((h, c) => { const a = align(c); doc.text(pdfSafe(h), a === 'left' ? x + pad : x + ws[c] - pad, y + rh - 1.6, { align: a }); x += ws[c]; });
+      y += rh;
+    };
+    if (y + rh * 3 > PH - M) newPage();
+    drawHead();
+    rows.forEach((r, ri) => {
+      if (y + rh > PH - M) { newPage(); drawHead(); }
+      let x = M;
+      r.forEach((v, c) => {
+        const fill = opt.fill && opt.fill(ri, c);
+        if (fill) { doc.setFillColor(...fill); doc.rect(x, y, ws[c], rh, 'F'); }
+        const st = opt.style ? opt.style(ri, c) : null;
+        doc.setFont('helvetica', (st && st.bold) || c === 0 ? 'bold' : 'normal'); doc.setFontSize(fs);
+        doc.setTextColor(...((st && st.color) || ink));
+        const a = align(c);
+        doc.text(pdfSafe(v ?? ''), a === 'left' ? x + pad : x + ws[c] - pad, y + rh - 1.6, { align: a });
+        x += ws[c];
+      });
+      doc.setDrawColor(...line); doc.setLineWidth(0.15); doc.line(M, y + rh, M + sum, y + rh);
+      y += rh;
+    });
+    y += 5;
+  };
+
+  // Intestazione
+  doc.setFillColor(...green); doc.rect(0, 0, PW, 3, 'F');
+  y = M + 2;
+  heading('Fantacalendari - classifica su tutti i calendari', 17);
+  para(info.map(([k, v]) => `${k}: ${v}`).join('   ·   '));
+
+  // Classifica
+  heading('Classifica su tutti i calendari');
+  const hasReal = stats.some(r => r.real != null);
+  const head1 = ['#', 'Squadra', 'Fantapunti', 'Punti medi', 'Dev. std', 'Min - Max', 'Pos. media', '1° posto', 'Ultimo',
+    ...(hasReal ? ['Punti reali', 'Diff. su media', 'Calendari meglio', 'Calendari peggio'] : [])];
+  const rows1 = stats.map((r, i) => [String(i + 1), r.nm, fmt(r.fp, 1), fmt(r.mean, 2), fmt(r.sd, 2), `${r.min} - ${r.max}`, fmt(r.posMean, 2),
+    pct(r.first) + '%', pct(r.last) + '%',
+    ...(hasReal ? [r.real ?? '-', r.real == null ? '-' : (r.real >= r.mean ? '+' : '') + fmt(r.real - r.mean, 2),
+      r.real == null ? '-' : pct(r.above) + '%', r.real == null ? '-' : pct(r.below) + '%'] : [])]);
+  table(head1, rows1, {
+    align: (c) => c === 1 ? 'left' : 'right',
+    style: (ri, c) => {
+      if (c === 1) return { bold: true };
+      if (c === 3) return { bold: true };
+      if (hasReal && c === 10 && stats[ri].real != null) return { color: stats[ri].real >= stats[ri].mean ? [29, 122, 58] : [179, 53, 43] };
+      return { bold: false };
+    },
+  });
+  if (hasReal) para('Calendari meglio / peggio: percentuale di calendari in cui la squadra avrebbe fatto più / meno punti di quelli reali.');
+
+  // Posizioni
+  newPage();
+  heading('Probabilità di ogni posizione');
+  para('Percentuale di calendari in cui la squadra chiude in quella posizione.');
+  const head2 = ['Squadra', ...Array.from({ length: n }, (_, p) => `${p + 1}°`)];
+  const rows2 = stats.map(r => [r.nm, ...Array.from({ length: n }, (_, p) => { const v = acc.posHist[r.t * n + p] / K; return v === 0 ? '·' : pct(v); })]);
+  table(head2, rows2, {
+    fill: (ri, c) => {
+      if (c === 0) return null;
+      const v = acc.posHist[stats[ri].t * n + c - 1] / K;
+      if (!v) return null;
+      const a = Math.min(1, v / 0.5) * 0.7;
+      return [255 + (29 - 255) * a, 255 + (107 - 255) * a, 255 + (69 - 255) * a].map(Math.round);
+    },
+    style: (ri, c) => {
+      if (c === 0) return { bold: true };
+      const v = acc.posHist[stats[ri].t * n + c - 1] / K;
+      return Math.min(1, v / 0.5) * 0.7 > 0.4 ? { color: [255, 255, 255] } : {};
+    },
+  });
+
+  // Squadra selezionata: calendari estremi
+  const t = state.sel, r = teamStats(t);
+  newPage();
+  heading(`Dettaglio: ${names[t]}`);
+  para(`Punti medi ${fmt(r.mean, 2)} · intervallo ${r.min} - ${r.max} · posizione media ${fmt(r.posMean, 2)} · vince il campionato nel ${pct(r.first)}% dei calendari` +
+    (r.real != null ? ` · punti reali ${r.real}: calendari meglio ${pct(r.above)}%, peggio ${pct(r.below)}%` : ''));
+  const calHead = ['Giornata', 'Avversario', 'Campo', 'Fantapunti', 'Risultato', 'Punti', 'Progressivo'];
+  const calRows = (perm) => calendarRows(t, perm).map(c => c.bye
+    ? [c.giornata, 'Riposo', '-', fmt(c.fpMy, 1), '-', String(c.pts), String(c.tot)]
+    : [c.giornata, c.opp, c.home ? 'Casa' : 'Trasferta', `${fmt(c.fpMy, 1)} - ${fmt(c.fpOpp, 1)}`, `${c.my} - ${c.their}`, String(c.pts), String(c.tot)]);
+  const resColor = (rows) => (ri, c) => {
+    if (c !== 4) return {};
+    const [a, b] = String(rows[ri][4]).split(' - ').map(Number);
+    return isNaN(a) ? {} : { bold: true, color: a > b ? [29, 122, 58] : a < b ? [179, 53, 43] : [201, 138, 0] };
+  };
+  const best = calRows(acc.maxPerm[t]), worst = calRows(acc.minPerm[t]);
+  heading(`Calendario più favorevole: ${acc.max[t]} punti`, 11);
+  table(calHead, best, { stretch: false, align: (c) => c <= 2 ? 'left' : 'right', style: resColor(best) });
+  heading(`Calendario più sfavorevole: ${acc.min[t]} punti`, 11);
+  table(calHead, worst, { stretch: false, align: (c) => c <= 2 ? 'left' : 'right', style: resColor(worst) });
+
+  // Numeri di pagina
+  const pages = doc.getNumberOfPages();
+  for (let i = 1; i <= pages; i++) {
+    doc.setPage(i); doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(...muted);
+    doc.text(`Fantacalendari · pagina ${i} di ${pages}`, PW - M, PH - 6, { align: 'right' });
+  }
+  await offerFile(exportBaseName() + '.pdf', doc.output('blob'));
 }
 
 function copyTable() {
@@ -960,6 +1240,8 @@ $('teamsel').addEventListener('change', (e) => {
   renderDetail();
 });
 $('copy').addEventListener('click', copyTable);
+$('xlsx').addEventListener('click', exportExcel);
+$('pdf').addEventListener('click', exportPDF);
 
 let draft = null;
 try { draft = localStorage.getItem('fantacalendari-dati'); } catch (e) {}
