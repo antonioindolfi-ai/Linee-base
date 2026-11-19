@@ -145,9 +145,11 @@ code { font-family: var(--font-mono); font-size: .92em; }
         <span class="hint">Separatori accettati: tabulazione (copia-incolla da Excel), punto e virgola, virgola. Con tabulazione o punto e virgola i decimali possono avere la virgola (72,5). La prima riga può essere un'intestazione.</span>
       </div>
       <div class="row">
-        <span class="filebtn"><button type="button" tabindex="-1">Carica CSV…</button><input id="file" type="file" accept=".csv,.txt,.tsv,text/plain,text/csv" aria-label="Carica file CSV"></span>
+        <span class="filebtn"><button type="button" tabindex="-1">Carica Excel o CSV…</button><input id="file" type="file" accept=".xlsx,.xls,.csv,.txt,.tsv" aria-label="Carica file Excel o CSV"></span>
         <button type="button" id="sample">Dati di esempio</button>
       </div>
+      <p class="hint">Puoi caricare direttamente il calendario esportato da Leghe Fantacalcio (.xlsx): vengono lette le giornate già giocate, ricavate le fasce gol della lega e calcolata la classifica reale.</p>
+      <p class="status" id="importinfo" role="status"></p>
     </div>
 
     <div class="panel">
@@ -417,6 +419,95 @@ function workerMain() {
 }
 </script>
 
+<script id="importer">
+/* ===== Import del calendario esportato da Leghe Fantacalcio (xlsx o copia-incolla) =====
+   Struttura: blocchi con intestazione "Nª Giornata lega"; sotto, righe
+   [squadra casa, fantapunti casa, fantapunti trasferta, squadra trasferta, risultato "2-1" oppure "-"]. */
+const LEAGUE_HDR = /^\s*(\d+)\s*[ªa°]?\s*giornata\s+lega/i;
+
+function cellNum(v) {
+  if (typeof v === 'number') return v;
+  if (v == null) return NaN;
+  const t = String(v).trim().replace(/\s/g, '').replace(',', '.');
+  return t === '' ? NaN : Number(t);
+}
+
+function isLeagueGrid(grid) {
+  return grid.some(r => r && r.some(c => typeof c === 'string' && LEAGUE_HDR.test(c)));
+}
+
+function parseLeagueGrid(grid) {
+  const days = [];
+  grid.forEach((row, r) => (row || []).forEach((cell, c) => {
+    const mm = typeof cell === 'string' && cell.match(LEAGUE_HDR);
+    if (!mm) return;
+    const matches = [];
+    for (let k = r + 1; k < grid.length; k++) {
+      const rr = grid[k] || [], home = rr[c];
+      if (home == null || String(home).trim() === '' || LEAGUE_HDR.test(String(home))) break;
+      const res = rr[c + 4] == null ? '' : String(rr[c + 4]).trim();
+      const gm = res.match(/^(\d+)\s*-\s*(\d+)$/);
+      matches.push({ home: String(home).trim(), away: String(rr[c + 3] ?? '').trim(),
+        fh: cellNum(rr[c + 1]), fa: cellNum(rr[c + 2]), played: !!gm, gh: gm ? +gm[1] : null, ga: gm ? +gm[2] : null });
+    }
+    days.push({ num: +mm[1], matches });
+  }));
+  days.sort((a, b) => a.num - b.num);
+  const played = days.filter(d => d.matches.length && d.matches.every(m => m.played));
+  const partial = days.filter(d => d.matches.some(m => m.played) && !d.matches.every(m => m.played));
+  if (!played.length) throw new Error('Nel file non c\'è nessuna giornata già giocata (tutti i risultati sono "-").');
+  const names = [...new Set(days.flatMap(d => d.matches.flatMap(m => [m.home, m.away])))].filter(Boolean);
+  const errs = [];
+  const scores = names.map(() => []);
+  played.forEach((d, g) => {
+    const seen = new Map();
+    for (const m of d.matches) {
+      for (const [t, f] of [[m.home, m.fh], [m.away, m.fa]]) {
+        if (seen.has(t)) errs.push(`${d.num}ª giornata: ${t} compare due volte.`);
+        if (!isFinite(f)) errs.push(`${d.num}ª giornata: fantapunti di ${t} non leggibili.`);
+        seen.set(t, f);
+      }
+    }
+    names.forEach((t, i) => { if (!seen.has(t)) errs.push(`${d.num}ª giornata: manca ${t}.`); scores[i][g] = seen.get(t); });
+  });
+  if (errs.length) throw new Error(errs.slice(0, 6).join('\n'));
+  return { names, scores, played, partial };
+}
+
+/* Cerca soglia, ampiezza fascia e bonus casa che riproducono tutti i risultati del file. */
+function inferRules(played) {
+  const ms = played.flatMap(d => d.matches);
+  let best = null;
+  for (const casa of [0, 1, 2, 0.5, 1.5, 3]) {
+    for (let soglia = 60; soglia <= 72; soglia += 0.5) {
+      for (let fascia = 2; fascia <= 10; fascia += 0.5) {
+        if (ms.every(m => goalsFrom(m.fh + casa, soglia, fascia) === m.gh && goalsFrom(m.fa, soglia, fascia) === m.ga)) {
+          const cost = (casa ? 100 : 0) + Math.abs(soglia - 66) + Math.abs(fascia - 6) / 10;
+          if (!best || cost < best.cost) best = { soglia, fascia, casa, cost };
+        }
+      }
+    }
+    if (best) break;
+  }
+  return best;
+}
+
+/* Punti reali in classifica dai risultati del file. */
+function realPoints(names, played, pv, pn) {
+  const pts = Object.fromEntries(names.map(n => [n, 0]));
+  for (const d of played) for (const m of d.matches) {
+    if (m.gh > m.ga) pts[m.home] += pv; else if (m.ga > m.gh) pts[m.away] += pv; else { pts[m.home] += pn; pts[m.away] += pn; }
+  }
+  return pts;
+}
+
+function leagueToText(lg) {
+  const fmtN = (x) => String(x).replace('.', ',');
+  const head = ['Squadra', ...lg.played.map(d => `${d.num}ª giornata`)].join('\t');
+  return [head, ...lg.names.map((n, i) => [n, ...lg.scores[i].map(fmtN)].join('\t'))].join('\n');
+}
+</script>
+
 <script>
 (() => {
 const $ = (id) => document.getElementById(id);
@@ -498,11 +589,68 @@ function getWorkerURL() {
   return workerURL;
 }
 
-let state = null, running = null;
+let state = null, running = null, league = null;
+
+/* Calendario Leghe Fantacalcio: converte nella tabella fantapunti, imposta le regole ricavate e calcola */
+function importLeague(grid) {
+  const info = $('importinfo');
+  info.className = 'status';
+  let lg;
+  try { lg = parseLeagueGrid(grid); }
+  catch (e) { info.className = 'status err'; info.textContent = 'File non riconosciuto. ' + e.message; league = null; return false; }
+  const rules = inferRules(lg.played);
+  if (rules) { $('soglia').value = rules.soglia; $('fascia').value = rules.fascia; $('casa').value = rules.casa; }
+  $('data').value = leagueToText(lg);
+  try { localStorage.setItem('fantacalendari-dati', $('data').value); } catch (e) {}
+  league = lg;
+  const nums = lg.played.map(d => d.num);
+  const msg = [`Importate ${lg.names.length} squadre e ${lg.played.length} giornate giocate (${nums[0]}ª–${nums[nums.length - 1]}ª).`];
+  msg.push(rules
+    ? `Fasce gol ricavate dai risultati: 1° gol a ${fmt(rules.soglia, 1)}, poi uno ogni ${fmt(rules.fascia, 1)} punti${rules.casa ? `, bonus casa ${fmt(rules.casa, 1)}` : ''}. Riproducono tutti i ${lg.played.reduce((a, d) => a + d.matches.length, 0)} risultati del file.`
+    : 'Attenzione: nessuna combinazione di soglia e fascia riproduce tutti i risultati del file. Controlla le regole a mano.');
+  if (lg.partial.length) msg.push(`Ignorate le giornate non complete: ${lg.partial.map(d => d.num + 'ª').join(', ')}.`);
+  msg.push('I punti reali vengono dai risultati del file.');
+  info.textContent = msg.join(' ');
+  return true;
+}
+
+let xlsxLoading = null;
+function loadXLSX() {
+  if (window.XLSX) return Promise.resolve(window.XLSX);
+  if (!xlsxLoading) xlsxLoading = new Promise((ok, ko) => {
+    const sc = document.createElement('script');
+    sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    sc.onload = () => ok(window.XLSX);
+    sc.onerror = () => { xlsxLoading = null; ko(new Error('Impossibile caricare il lettore di file Excel.')); };
+    document.head.appendChild(sc);
+  });
+  return xlsxLoading;
+}
+
+function readWorkbook(buf) {
+  return loadXLSX().then(X => {
+    const wb = X.read(new Uint8Array(buf), { type: 'array' });
+    const grids = wb.SheetNames.map(n => X.utils.sheet_to_json(wb.Sheets[n], { header: 1, raw: true, defval: null }));
+    return grids.find(isLeagueGrid) || grids[0];
+  });
+}
+
+function gridToText(grid) {
+  return grid.map(r => (r || []).map(c => c == null ? '' : typeof c === 'number' ? String(c).replace('.', ',') : String(c)).join('\t'))
+    .join('\n').replace(/\t+$/gm, '');
+}
 
 function run() {
   const status = $('status');
   status.className = 'status';
+  const raw = $('data').value;
+  if (/giornata\s+lega/i.test(raw)) {
+    // incollato il calendario di Leghe Fantacalcio così com'è
+    const grid = raw.split(/\r?\n/).map(l => l.split(/\t|;/).map(c => c.trim() === '' ? null : c));
+    if (!importLeague(grid)) return;
+  } else if (league && raw !== leagueToText(league)) {
+    league = null; $('importinfo').textContent = '';
+  }
   let data, o;
   try { data = parseData($('data').value); o = readRules(); }
   catch (e) { status.className = 'status err'; status.textContent = e.message; return; }
@@ -541,7 +689,12 @@ function run() {
     status.textContent = `Fatto in ${fmt(secs, secs < 10 ? 2 : 1)} s.`;
     const prevReal = state && state.names.join('|') === data.names.join('|') ? state.real : null;
     const prevSel = state ? state.sel : 0;
-    state = { ...data, o, model, acc: merged, exact, total, secs, real: prevReal || new Array(data.names.length).fill(null), sel: Math.min(prevSel, data.names.length - 1) };
+    let real = prevReal || new Array(data.names.length).fill(null);
+    if (league && league.names.join('|') === data.names.join('|')) {
+      const rp = realPoints(league.names, league.played, o.pv, o.pn);
+      real = data.names.map(n => rp[n]);
+    }
+    state = { ...data, o, model, acc: merged, exact, total, secs, real, sel: Math.min(prevSel, data.names.length - 1) };
     render();
   };
 
@@ -771,13 +924,22 @@ function fallbackCopy(text, ok) {
 
 /* ---------- Eventi ---------- */
 $('run').addEventListener('click', run);
-$('sample').addEventListener('click', () => { $('data').value = sampleText(); run(); });
+$('sample').addEventListener('click', () => { league = null; $('importinfo').textContent = ''; $('data').value = sampleText(); run(); });
 $('file').addEventListener('change', (e) => {
   const f = e.target.files[0]; if (!f) return;
-  const rd = new FileReader();
-  rd.onload = () => { $('data').value = String(rd.result); run(); };
-  rd.readAsText(f);
   e.target.value = '';
+  const rd = new FileReader();
+  if (/\.xlsx?$/i.test(f.name)) {
+    $('importinfo').className = 'status'; $('importinfo').textContent = `Lettura di ${f.name}…`;
+    rd.onload = () => readWorkbook(rd.result).then(grid => {
+      if (isLeagueGrid(grid)) { if (importLeague(grid)) run(); }
+      else { league = null; $('importinfo').textContent = ''; $('data').value = gridToText(grid); run(); }
+    }).catch(err => { $('importinfo').className = 'status err'; $('importinfo').textContent = 'Errore nella lettura del file: ' + err.message; });
+    rd.readAsArrayBuffer(f);
+  } else {
+    rd.onload = () => { league = null; $('importinfo').textContent = ''; $('data').value = String(rd.result); run(); };
+    rd.readAsText(f);
+  }
 });
 $('summary').addEventListener('click', (e) => {
   if (e.target.closest('input')) return;
