@@ -1,0 +1,808 @@
+<title>Fantacalendari</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: colonna unica "tabellino" — pannello dati/regole in alto, risultati sotto, metodo in fondo */
+:root {
+  --bg: #f3f5f1;
+  --surface: #ffffff;
+  --ink: #15201a;
+  --muted: #5b6a60;
+  --line: #d6ddd5;
+  --accent: #1d6b45;
+  --accent-ink: #ffffff;
+  --amber: #c98a00;
+  --good: #1d7a3a;
+  --bad: #b3352b;
+  --font-display: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1612; --surface: #17211b; --ink: #e5ece6; --muted: #98a89d; --line: #2c3a31;
+    --accent: #4fbf86; --accent-ink: #08130d; --amber: #e3ab2e; --good: #5cc97c; --bad: #ef7b70;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1612; --surface: #17211b; --ink: #e5ece6; --muted: #98a89d; --line: #2c3a31;
+  --accent: #4fbf86; --accent-ink: #08130d; --amber: #e3ab2e; --good: #5cc97c; --bad: #ef7b70;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink);
+  font-family: var(--font-body); font-size: 15px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 24px 48px;
+}
+.wrap { max-width: 1080px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px; }
+h1, h2, h3 { font-family: var(--font-display); font-weight: 700; letter-spacing: .01em; text-wrap: balance; margin: 0; line-height: 1.1; }
+h1 { font-size: clamp(34px, 6vw, 52px); text-transform: uppercase; }
+h2 { font-size: 26px; text-transform: uppercase; }
+h3 { font-size: 20px; }
+p { margin: 0; }
+.lead { color: var(--muted); max-width: 68ch; }
+.eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+header { display: flex; flex-direction: column; gap: 10px; border-bottom: 3px solid var(--ink); padding-bottom: 18px; }
+
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 20px; display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.grid2 { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 20px; }
+@media (max-width: 820px) { .grid2 { grid-template-columns: minmax(0, 1fr); } }
+
+label { font-size: 13px; font-weight: 500; color: var(--muted); }
+textarea, input, select, button { font: inherit; color: inherit; }
+textarea {
+  width: 100%; min-height: 230px; resize: vertical; padding: 10px 12px;
+  font-family: var(--font-mono); font-size: 12.5px; line-height: 1.55;
+  background: var(--bg); border: 1px solid var(--line); border-radius: 4px; white-space: pre; overflow-x: auto;
+}
+input[type="number"], select, input.real {
+  background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 6px 8px; width: 100%;
+  font-variant-numeric: tabular-nums;
+}
+textarea:focus-visible, input:focus-visible, select:focus-visible, button:focus-visible, summary:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 2px;
+}
+.rules { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 14px; }
+.field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.field.full { grid-column: 1 / -1; }
+.hint { font-size: 12.5px; color: var(--muted); }
+.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+button {
+  border: 1px solid var(--line); background: var(--surface); border-radius: 4px; padding: 8px 14px; cursor: pointer; font-weight: 500;
+}
+button:hover { border-color: var(--accent); }
+button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; padding: 10px 20px; }
+button.primary:disabled { opacity: .55; cursor: progress; }
+.filebtn { position: relative; overflow: hidden; display: inline-flex; }
+.filebtn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+
+.status { font-size: 13.5px; color: var(--muted); min-height: 1.5em; }
+.status.err { color: var(--bad); font-weight: 500; white-space: pre-line; }
+.progress { height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; }
+.progress > div { height: 100%; width: 0; background: var(--accent); transition: width .15s linear; }
+
+.stats { display: flex; flex-wrap: wrap; gap: 8px 28px; font-size: 14px; color: var(--muted); }
+.stats b { color: var(--ink); font-family: var(--font-mono); font-weight: 500; }
+
+.tablebox { overflow-x: auto; border: 1px solid var(--line); border-radius: 4px; }
+table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; font-size: 13.5px; }
+th, td { padding: 7px 10px; text-align: right; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th { font-family: var(--font-mono); font-weight: 500; font-size: 11.5px; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); background: var(--bg); position: sticky; top: 0; }
+td.name, th.name { text-align: left; }
+td.name { font-weight: 600; }
+tbody tr:last-child td { border-bottom: 0; }
+tbody tr.sel td { background: color-mix(in oklab, var(--accent) 10%, transparent); }
+tbody tr.clickable { cursor: pointer; }
+tbody tr.clickable:hover td { background: color-mix(in oklab, var(--accent) 6%, transparent); }
+input.real { width: 72px; padding: 3px 6px; text-align: right; }
+.pos { color: var(--good); } .neg { color: var(--bad); }
+.pill { display: inline-block; font-family: var(--font-mono); font-size: 11.5px; padding: 1px 7px; border-radius: 10px; border: 1px solid currentColor; }
+.heat td.cell { min-width: 52px; }
+.heat td.cell span { display: block; }
+
+.detailhead { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; justify-content: space-between; }
+.detailhead .field { width: min(320px, 100%); }
+.chart { width: 100%; height: auto; display: block; }
+.chart text { fill: var(--muted); font-family: var(--font-mono); font-size: 11px; }
+.chart .bar { fill: var(--accent); }
+.chart .bar.real { fill: var(--amber); }
+.chart .axis { stroke: var(--line); }
+.chart .mean { stroke: var(--ink); stroke-dasharray: 4 3; }
+.legend { display: flex; flex-wrap: wrap; gap: 16px; font-size: 12.5px; color: var(--muted); }
+.sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+
+details { border-top: 1px solid var(--line); padding-top: 12px; }
+summary { cursor: pointer; font-weight: 600; }
+.cal td.res { font-weight: 600; }
+.cal td.res.W { color: var(--good); } .cal td.res.L { color: var(--bad); } .cal td.res.D { color: var(--amber); }
+
+.method { display: flex; flex-direction: column; gap: 12px; max-width: 76ch; }
+.method p, .method li { color: var(--ink); }
+.method ul { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; }
+code { font-family: var(--font-mono); font-size: .92em; }
+@media (prefers-reduced-motion: reduce) { .progress > div { transition: none; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">Fantacalcio · scontri diretti</span>
+    <h1>Fantacalendari</h1>
+    <p class="lead">Incolla i fantapunti di ogni squadra giornata per giornata: lo strumento rigioca il campionato con tutti i calendari possibili e mostra quanti punti e quale posizione avrebbe ottenuto ogni squadra, e quanto il calendario reale l'ha aiutata o penalizzata.</p>
+  </header>
+
+  <section class="grid2">
+    <div class="panel">
+      <h2>Fantapunti</h2>
+      <div class="field">
+        <label for="data">Una riga per squadra: nome, poi i fantapunti di ogni giornata</label>
+        <textarea id="data" spellcheck="false"></textarea>
+        <span class="hint">Separatori accettati: tabulazione (copia-incolla da Excel), punto e virgola, virgola. Con tabulazione o punto e virgola i decimali possono avere la virgola (72,5). La prima riga può essere un'intestazione.</span>
+      </div>
+      <div class="row">
+        <span class="filebtn"><button type="button" tabindex="-1">Carica CSV…</button><input id="file" type="file" accept=".csv,.txt,.tsv,text/plain,text/csv" aria-label="Carica file CSV"></span>
+        <button type="button" id="sample">Dati di esempio</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Regole della lega</h2>
+      <div class="rules">
+        <div class="field"><label for="soglia">Soglia 1° gol</label><input id="soglia" type="number" step="0.5" value="66"></div>
+        <div class="field"><label for="fascia">Ampiezza fascia gol</label><input id="fascia" type="number" step="0.5" min="0.5" value="6"></div>
+        <div class="field"><label for="pv">Punti vittoria</label><input id="pv" type="number" step="1" value="3"></div>
+        <div class="field"><label for="pn">Punti pareggio</label><input id="pn" type="number" step="1" value="1"></div>
+        <div class="field"><label for="casa">Bonus casa (fantapunti)</label><input id="casa" type="number" step="0.5" value="0"></div>
+        <div class="field"><label for="riposo">Punti a chi riposa</label><input id="riposo" type="number" step="1" value="0"></div>
+        <div class="field full"><label for="tb">A parità di punti</label>
+          <select id="tb">
+            <option value="fp">Conta la somma dei fantapunti</option>
+            <option value="none">Pari merito (stessa posizione)</option>
+          </select>
+        </div>
+        <div class="field"><label for="mode">Calcolo</label>
+          <select id="mode">
+            <option value="auto">Automatico</option>
+            <option value="exact">Tutti i calendari</option>
+            <option value="sample">Campione casuale</option>
+          </select>
+        </div>
+        <div class="field"><label for="samples">Calendari nel campione</label><input id="samples" type="number" step="100000" min="10000" value="2000000"></div>
+      </div>
+      <span class="hint">Gol: sotto la soglia 0, poi 1 gol in più ogni fascia (66 → 1, 72 → 2, 78 → 3…). In automatico il calcolo è esatto fino a 10 squadre; oltre si usa un campione casuale.</span>
+      <button type="button" class="primary" id="run">Calcola</button>
+      <div class="progress" aria-hidden="true"><div id="bar"></div></div>
+      <p class="status" id="status" role="status"></p>
+    </div>
+  </section>
+
+  <section class="panel" id="results" hidden>
+    <div class="row" style="justify-content: space-between;">
+      <h2>Classifica su tutti i calendari</h2>
+      <button type="button" id="copy">Copia tabella</button>
+    </div>
+    <div class="stats" id="runstats"></div>
+    <p class="hint">Inserisci i punti della classifica reale per vedere quanti calendari avrebbero dato di più o di meno. Clicca una squadra per il dettaglio.</p>
+    <div class="tablebox"><table id="summary"></table></div>
+  </section>
+
+  <section class="panel" id="heatpanel" hidden>
+    <h2>Probabilità di ogni posizione</h2>
+    <p class="hint">Percentuale di calendari in cui la squadra chiude in quella posizione.</p>
+    <div class="tablebox"><table id="heat" class="heat"></table></div>
+  </section>
+
+  <section class="panel" id="detail" hidden>
+    <div class="detailhead">
+      <h2 id="dtitle">Dettaglio squadra</h2>
+      <div class="field"><label for="teamsel">Squadra</label><select id="teamsel"></select></div>
+    </div>
+    <div class="stats" id="dstats"></div>
+    <div>
+      <h3>Distribuzione dei punti in classifica</h3>
+      <div class="legend" style="margin-top:6px">
+        <span><span class="sw" style="background:var(--accent)"></span>Percentuale di calendari</span>
+        <span><span class="sw" style="background:var(--amber)"></span>Punti reali</span>
+        <span>- - - media</span>
+      </div>
+      <svg class="chart" id="hist" viewBox="0 0 720 240" role="img" aria-label="Istogramma dei punti"></svg>
+    </div>
+    <details id="bestbox">
+      <summary>Il calendario più favorevole</summary>
+      <div class="tablebox" style="margin-top:10px"><table class="cal" id="best"></table></div>
+    </details>
+    <details id="worstbox">
+      <summary>Il calendario più sfavorevole</summary>
+      <div class="tablebox" style="margin-top:10px"><table class="cal" id="worst"></table></div>
+    </details>
+  </section>
+
+  <section class="panel method">
+    <h2>Come funziona il calcolo</h2>
+    <ul>
+      <li>I fantapunti di ogni squadra in ogni giornata sono fissi; cambia solo chi incontra chi. Per ogni giornata e ogni coppia di squadre il punteggio viene convertito in gol con le fasce scelte e da lì in vittoria, pareggio o sconfitta.</li>
+      <li>Il calendario è un girone all'italiana con lo schema di Berger (lo stesso dei generatori di calendario delle leghe), ripetuto ciclicamente: con 8 squadre il girone dura 7 giornate e dall'ottava ricomincia, a campi invertiti.</li>
+      <li>"Tutti i calendari possibili" sono tutti i modi di assegnare le squadre alle posizioni dello schema: <code>n!</code> assegnazioni (40.320 con 8 squadre, 3.628.800 con 10). Alcune assegnazioni producono lo stesso calendario, ma ogni calendario distinto compare lo stesso numero di volte, quindi le percentuali sono esatte.</li>
+      <li>Con un numero dispari di squadre si aggiunge una squadra fantasma: chi la incontra riposa e riceve i punti indicati nelle regole.</li>
+      <li>Oltre 10 squadre le assegnazioni sono troppe (12! ≈ 479 milioni): si estrae un campione casuale uniforme. Le percentuali sono allora stime, con margine di errore indicato.</li>
+      <li>Controllo di coerenza: senza bonus casa, la media dei punti su tutti i calendari coincide con la media dei punti che la squadra otterrebbe affrontando a turno tutte le altre in ogni giornata. Il valore è riportato accanto ai risultati.</li>
+      <li>Lo spareggio con la somma dei fantapunti usa i fantapunti incollati, senza bonus casa. Regole come il modificatore o la differenza minima vanno già incluse nei fantapunti inseriti.</li>
+    </ul>
+  </section>
+</div>
+
+<script id="engine">
+/* ===== Motore di calcolo: usato sia dalla pagina sia dai Web Worker ===== */
+function goalsFrom(x, soglia, fascia) {
+  if (!(x >= soglia)) return 0;
+  return Math.floor((x - soglia) / fascia + 1e-9) + 1;
+}
+
+/* Schema di Berger per N posizioni (N pari). Restituisce N-1 giornate, ciascuna lista di [casa, trasferta]. */
+function bergerRounds(N) {
+  const M = N - 1, half = N / 2, rounds = [];
+  for (let r = 0; r < M; r++) {
+    const c = (r * half) % M, pairs = [];
+    pairs.push(r % 2 === 0 ? [c, M] : [M, c]);
+    for (let k = 1; k < half; k++) {
+      const x = (c + k) % M, y = (c - k + M) % M;
+      pairs.push(k % 2 === 0 ? [x, y] : [y, x]);
+    }
+    rounds.push(pairs);
+  }
+  return rounds;
+}
+
+/* Partite della giornata g (0-based) con le posizioni dello schema, campi invertiti nei cicli dispari. */
+function roundPairs(rounds, g) {
+  const M = rounds.length, cycle = Math.floor(g / M), base = rounds[g % M];
+  return cycle % 2 === 1 ? base.map(p => [p[1], p[0]]) : base;
+}
+
+function matchResult(sh, sa, o) {
+  const gh = goalsFrom(sh, o.soglia, o.fascia), ga = goalsFrom(sa, o.soglia, o.fascia);
+  return { gh, ga, ph: gh > ga ? o.pv : gh === ga ? o.pn : 0, pa: ga > gh ? o.pv : gh === ga ? o.pn : 0 };
+}
+
+/* Costruisce le tabelle precalcolate.
+   P[((s*N+t)*N+a)*N+b] = punti della squadra a messa in posizione s, contro b in posizione t,
+   sommati su tutte le giornate in cui le posizioni s e t si incontrano. */
+function buildModel(scores, o) {
+  const n = scores.length, G = scores[0].length;
+  const N = n % 2 === 1 ? n + 1 : n, BYE = n % 2 === 1 ? n : -1;
+  const rounds = bergerRounds(N);
+  const P = new Int32Array(N * N * N * N);
+  const meet = new Uint8Array(N * N);
+  for (let g = 0; g < G; g++) {
+    for (const [hs, as] of roundPairs(rounds, g)) {
+      meet[hs * N + as] = meet[as * N + hs] = 1;
+      for (let ta = 0; ta < N; ta++) for (let tb = 0; tb < N; tb++) {
+        if (ta === tb) continue;
+        let ph, pa;
+        if (ta === BYE || tb === BYE) { ph = ta === BYE ? 0 : o.riposo; pa = tb === BYE ? 0 : o.riposo; }
+        else { const r = matchResult(scores[ta][g] + o.casa, scores[tb][g], o); ph = r.ph; pa = r.pa; }
+        P[((hs * N + as) * N + ta) * N + tb] += ph;
+        P[((as * N + hs) * N + tb) * N + ta] += pa;
+      }
+    }
+  }
+  const pairs = [];
+  for (let s = 0; s < N; s++) for (let t = s + 1; t < N; t++) if (meet[s * N + t]) pairs.push(s, t);
+  // chiave di spareggio: rango denso dei fantapunti totali (0 = meno fantapunti)
+  const tb = new Int32Array(N);
+  if (o.tb === 'fp') {
+    const tot = scores.map(r => Math.round(r.reduce((x, y) => x + y, 0) * 1000));
+    const uniq = [...new Set(tot)].sort((x, y) => x - y);
+    for (let a = 0; a < n; a++) tb[a] = uniq.indexOf(tot[a]);
+  }
+  const maxPts = G * Math.max(o.pv, o.pn, o.riposo, 0);
+  return { n, N, G, BYE, P, pairs: Int32Array.from(pairs), tb, maxPts };
+}
+
+function newAcc(m) {
+  return {
+    count: 0, maxPts: m.maxPts, n: m.n, N: m.N,
+    hist: new Float64Array(m.n * (m.maxPts + 1)),
+    posHist: new Float64Array(m.n * m.n),
+    sum: new Float64Array(m.n), sumSq: new Float64Array(m.n),
+    min: new Int32Array(m.n).fill(2147483647), max: new Int32Array(m.n).fill(-1),
+    minPerm: Array.from({ length: m.n }, () => null), maxPerm: Array.from({ length: m.n }, () => null),
+  };
+}
+
+/* Valuta un'assegnazione perm (perm[posizione] = squadra) e aggiorna gli accumulatori. */
+function makeEvaluator(m, acc) {
+  const { n, N, P, pairs, tb } = m, NN = N * N, L = pairs.length, W = m.maxPts + 1;
+  const pts = new Int32Array(N), key = new Int32Array(n);
+  return function (perm) {
+    pts.fill(0);
+    for (let i = 0; i < L; i += 2) {
+      const s = pairs[i], t = pairs[i + 1], a = perm[s], b = perm[t];
+      pts[a] += P[(s * N + t) * NN + a * N + b];
+      pts[b] += P[(t * N + s) * NN + b * N + a];
+    }
+    for (let a = 0; a < n; a++) key[a] = pts[a] * N + tb[a];
+    for (let a = 0; a < n; a++) {
+      const p = pts[a], k = key[a];
+      let pos = 0;
+      for (let j = 0; j < n; j++) if (key[j] > k) pos++;
+      acc.hist[a * W + p]++;
+      acc.posHist[a * n + pos]++;
+      acc.sum[a] += p; acc.sumSq[a] += p * p;
+      if (p > acc.max[a]) { acc.max[a] = p; acc.maxPerm[a] = Array.from(perm); }
+      if (p < acc.min[a]) { acc.min[a] = p; acc.minPerm[a] = Array.from(perm); }
+    }
+    acc.count++;
+  };
+}
+
+/* Enumerazione esatta: per ogni squadra f in firsts, perm[0] = f e si permutano le altre N-1 (algoritmo di Heap). */
+function runExact(m, firsts, onProgress) {
+  const acc = newAcc(m), evalPerm = makeEvaluator(m, acc), N = m.N;
+  const perm = new Int32Array(N), c = new Int32Array(N);
+  let tick = 0;
+  for (const f of firsts) {
+    perm[0] = f;
+    let k = 1;
+    for (let t = 0; t < N; t++) if (t !== f) perm[k++] = t;
+    evalPerm(perm);
+    c.fill(0);
+    const len = N - 1; // permuta perm[1..N-1]
+    let i = 1;
+    while (i < len) {
+      if (c[i] < i) {
+        const x = (i % 2 === 0) ? 1 : 1 + c[i], y = 1 + i;
+        const tmp = perm[x]; perm[x] = perm[y]; perm[y] = tmp;
+        evalPerm(perm);
+        c[i]++; i = 1;
+        if (++tick === 65536) { tick = 0; onProgress && onProgress(acc.count); }
+      } else { c[i] = 0; i++; }
+    }
+  }
+  return acc;
+}
+
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+/* Campione casuale uniforme di assegnazioni (Fisher-Yates). */
+function runSample(m, count, seed, onProgress) {
+  const acc = newAcc(m), evalPerm = makeEvaluator(m, acc), N = m.N, rnd = mulberry32(seed);
+  const perm = new Int32Array(N);
+  for (let i = 0; i < N; i++) perm[i] = i;
+  for (let s = 0; s < count; s++) {
+    for (let i = N - 1; i > 0; i--) {
+      const j = Math.floor(rnd() * (i + 1));
+      const tmp = perm[i]; perm[i] = perm[j]; perm[j] = tmp;
+    }
+    evalPerm(perm);
+    if ((s & 65535) === 65535 && onProgress) onProgress(acc.count);
+  }
+  return acc;
+}
+
+function mergeAcc(into, a) {
+  into.count += a.count;
+  for (let i = 0; i < into.hist.length; i++) into.hist[i] += a.hist[i];
+  for (let i = 0; i < into.posHist.length; i++) into.posHist[i] += a.posHist[i];
+  for (let t = 0; t < into.n; t++) {
+    into.sum[t] += a.sum[t]; into.sumSq[t] += a.sumSq[t];
+    if (a.max[t] > into.max[t]) { into.max[t] = a.max[t]; into.maxPerm[t] = a.maxPerm[t]; }
+    if (a.min[t] < into.min[t]) { into.min[t] = a.min[t]; into.minPerm[t] = a.minPerm[t]; }
+  }
+  return into;
+}
+
+/* Codice eseguito dentro il Worker */
+function workerMain() {
+  self.onmessage = (e) => {
+    const { model, job } = e.data;
+    const report = (done) => self.postMessage({ type: 'progress', done });
+    const acc = job.kind === 'exact'
+      ? runExact(model, job.firsts, report)
+      : runSample(model, job.count, job.seed, report);
+    self.postMessage({ type: 'done', acc });
+  };
+}
+</script>
+
+<script>
+(() => {
+const $ = (id) => document.getElementById(id);
+const fmt = (x, d = 1) => x.toLocaleString('it-IT', { minimumFractionDigits: d, maximumFractionDigits: d });
+const fmtInt = (x) => Math.round(x).toLocaleString('it-IT');
+const pct = (x) => x === 0 ? '0' : x < 0.001 ? '<0,1' : fmt(x * 100, 1);
+const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+/* ---------- Dati di esempio (squadre inventate, punteggi generati) ---------- */
+function sampleText() {
+  const names = ['Atletico Ma Non Troppo', 'Dinamo Divano', 'Real Pazienza', 'Sporting Lasagna',
+                 'Inter Vallo', 'Rapid Ristretto', 'Olympique Pausa Caffè', 'Deportivo Panchina'];
+  const rnd = mulberry32(2026), skill = [71, 69.5, 70, 67, 68.5, 66.5, 68, 67.5];
+  const G = 12;
+  const gauss = () => { let u = 0, v = 0; while (!u) u = rnd(); while (!v) v = rnd(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
+  const head = ['Squadra', ...Array.from({ length: G }, (_, i) => 'G' + (i + 1))].join('\t');
+  const rows = names.map((nm, t) => [nm, ...Array.from({ length: G }, () => {
+    const v = Math.round((skill[t] + gauss() * 5.5) * 2) / 2;
+    return String(v).replace('.', ',');
+  })].join('\t'));
+  return [head, ...rows].join('\n');
+}
+
+/* ---------- Lettura dei dati ---------- */
+function parseData(text) {
+  const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length);
+  if (lines.length < 2) throw new Error('Servono almeno 2 squadre, una per riga.');
+  const sep = lines.some(l => l.includes('\t')) ? '\t' : lines.some(l => l.includes(';')) ? ';' : ',';
+  const toNum = (s) => {
+    let t = s.trim().replace(/\s/g, '');
+    if (sep !== ',') t = t.replace(',', '.');
+    return t === '' ? NaN : Number(t);
+  };
+  let rows = lines.map(l => l.split(sep).map(c => c.trim()));
+  let labels = null;
+  if (rows[0].slice(1).every(c => c === '' || isNaN(toNum(c)))) { labels = rows[0].slice(1); rows = rows.slice(1); }
+  if (rows.length < 2) throw new Error('Servono almeno 2 squadre, una per riga.');
+  const G = rows[0].length - 1;
+  if (G < 1) throw new Error('Ogni riga deve avere il nome della squadra seguito dai fantapunti di almeno una giornata.');
+  const names = [], scores = [], errs = [];
+  rows.forEach((r, i) => {
+    while (r.length > G + 1 && r[r.length - 1] === '') r.pop();
+    if (r.length !== G + 1) errs.push(`Riga "${r[0]}": ${r.length - 1} giornate invece di ${G}.`);
+    const vals = r.slice(1).map(toNum);
+    vals.forEach((v, j) => { if (!isFinite(v)) errs.push(`Riga "${r[0]}", giornata ${j + 1}: "${r[j + 1]}" non è un numero.`); });
+    names.push(r[0] || `Squadra ${i + 1}`); scores.push(vals);
+  });
+  const dup = names.filter((x, i) => names.indexOf(x) !== i);
+  if (dup.length) errs.push(`Nome ripetuto: ${dup[0]}.`);
+  if (names.length > 20) errs.push('Massimo 20 squadre.');
+  if (errs.length) throw new Error(errs.slice(0, 6).join('\n') + (errs.length > 6 ? `\n…e altri ${errs.length - 6} errori.` : ''));
+  const glabels = Array.from({ length: G }, (_, j) => (labels && labels[j]) || `G${j + 1}`);
+  return { names, scores, G, glabels };
+}
+
+function readRules() {
+  const num = (id) => Number($(id).value);
+  const o = { soglia: num('soglia'), fascia: num('fascia'), pv: num('pv'), pn: num('pn'), casa: num('casa'),
+              riposo: num('riposo'), tb: $('tb').value, mode: $('mode').value, samples: Math.round(num('samples')) };
+  const bad = [];
+  if (!isFinite(o.soglia)) bad.push('soglia');
+  if (!(o.fascia > 0)) bad.push('ampiezza fascia (deve essere maggiore di 0)');
+  for (const k of ['pv', 'pn', 'riposo']) if (!Number.isInteger(o[k])) bad.push('punti vittoria/pareggio/riposo (numeri interi)');
+  if (!isFinite(o.casa)) bad.push('bonus casa');
+  if (!(o.samples >= 1000)) bad.push('calendari nel campione (almeno 1.000)');
+  if (bad.length) throw new Error('Controlla: ' + [...new Set(bad)].join(', ') + '.');
+  return o;
+}
+
+function factorial(k) { let r = 1; for (let i = 2; i <= k; i++) r *= i; return r; }
+
+/* ---------- Esecuzione con Web Worker ---------- */
+let workerURL = null;
+function getWorkerURL() {
+  if (!workerURL) {
+    const src = $('engine').textContent + '\nworkerMain();';
+    workerURL = URL.createObjectURL(new Blob([src], { type: 'text/javascript' }));
+  }
+  return workerURL;
+}
+
+let state = null, running = null;
+
+function run() {
+  const status = $('status');
+  status.className = 'status';
+  let data, o;
+  try { data = parseData($('data').value); o = readRules(); }
+  catch (e) { status.className = 'status err'; status.textContent = e.message; return; }
+
+  const model = buildModel(data.scores, o);
+  const total = factorial(model.N);
+  const exact = o.mode === 'exact' || (o.mode === 'auto' && model.N <= 10);
+  if (exact && model.N > 11) {
+    status.className = 'status err';
+    status.textContent = `Con ${data.names.length} squadre i calendari sono ${fmtInt(total)}: troppi per contarli tutti. Scegli "Campione casuale".`;
+    return;
+  }
+  const target = exact ? total : o.samples;
+  const nw = Math.max(1, Math.min(navigator.hardwareConcurrency || 4, 8, exact ? model.N : 8));
+  const jobs = [];
+  if (exact) {
+    for (let w = 0; w < nw; w++) jobs.push({ kind: 'exact', firsts: [] });
+    for (let f = 0; f < model.N; f++) jobs[f % nw].firsts.push(f);
+  } else {
+    const seed0 = (Date.now() ^ (Math.random() * 1e9)) >>> 0;
+    for (let w = 0; w < nw; w++) jobs.push({ kind: 'sample', count: Math.floor(target / nw) + (w < target % nw ? 1 : 0), seed: (seed0 + w * 7919) >>> 0 });
+  }
+
+  if (running) running.forEach(w => w.terminate());
+  $('run').disabled = true;
+  status.textContent = exact ? `Calcolo di ${fmtInt(target)} assegnazioni…` : `Estrazione di ${fmtInt(target)} calendari casuali…`;
+  const t0 = performance.now();
+  const done = new Array(jobs.length).fill(0);
+  let merged = null, finished = 0;
+  const setBar = () => { $('bar').style.width = (100 * done.reduce((a, b) => a + b, 0) / target).toFixed(1) + '%'; };
+
+  const finish = () => {
+    $('run').disabled = false; running = null;
+    $('bar').style.width = '100%';
+    const secs = (performance.now() - t0) / 1000;
+    status.textContent = `Fatto in ${fmt(secs, secs < 10 ? 2 : 1)} s.`;
+    const prevReal = state && state.names.join('|') === data.names.join('|') ? state.real : null;
+    const prevSel = state ? state.sel : 0;
+    state = { ...data, o, model, acc: merged, exact, total, secs, real: prevReal || new Array(data.names.length).fill(null), sel: Math.min(prevSel, data.names.length - 1) };
+    render();
+  };
+
+  let workers;
+  try {
+    workers = jobs.map((job, idx) => {
+      const w = new Worker(getWorkerURL());
+      w.onmessage = (e) => {
+        if (e.data.type === 'progress') { done[idx] = e.data.done; setBar(); return; }
+        const a = e.data.acc;
+        merged = merged ? mergeAcc(merged, a) : a;
+        done[idx] = a.count; setBar();
+        w.terminate();
+        if (++finished === jobs.length) finish();
+      };
+      w.onerror = (err) => {
+        workers.forEach(x => x.terminate());
+        $('run').disabled = false; running = null;
+        status.className = 'status err'; status.textContent = 'Errore nel calcolo: ' + (err.message || 'sconosciuto');
+      };
+      const m = { ...model, P: model.P };
+      w.postMessage({ model: m, job });
+      return w;
+    });
+    running = workers;
+  } catch (err) {
+    // Fallback senza Worker: calcolo nel thread principale
+    setTimeout(() => {
+      for (const job of jobs) {
+        const a = job.kind === 'exact' ? runExact(model, job.firsts) : runSample(model, job.count, job.seed);
+        merged = merged ? mergeAcc(merged, a) : a;
+      }
+      finish();
+    }, 20);
+  }
+}
+
+/* ---------- Statistiche derivate ---------- */
+function teamStats(t) {
+  const { acc } = state, W = acc.maxPts + 1, n = acc.n, K = acc.count;
+  const mean = acc.sum[t] / K;
+  const sd = Math.sqrt(Math.max(0, acc.sumSq[t] / K - mean * mean));
+  let posMean = 0;
+  for (let p = 0; p < n; p++) posMean += (p + 1) * acc.posHist[t * n + p];
+  posMean /= K;
+  const first = acc.posHist[t * n] / K, last = acc.posHist[t * n + n - 1] / K;
+  const fp = state.scores[t].reduce((a, b) => a + b, 0);
+  const real = state.real[t];
+  let below = null, above = null;
+  if (real != null) {
+    let b = 0, a = 0;
+    for (let p = 0; p < W; p++) { const h = acc.hist[t * W + p]; if (p < real) b += h; else if (p > real) a += h; }
+    below = b / K; above = a / K;
+  }
+  return { mean, sd, posMean, first, last, fp, min: acc.min[t], max: acc.max[t], real, below, above };
+}
+
+/* Media teorica "contro tutti": per ogni giornata, media dei punti contro ognuna delle altre squadre. */
+function allVsAllMean(t) {
+  const { scores, o, G } = state, n = scores.length;
+  if (n % 2 === 1 || o.casa !== 0) return null;
+  let s = 0;
+  for (let g = 0; g < G; g++) {
+    let x = 0;
+    for (let b = 0; b < n; b++) if (b !== t) x += matchResult(scores[t][g], scores[b][g], { ...o, casa: 0 }).ph;
+    s += x / (n - 1);
+  }
+  return s;
+}
+
+/* ---------- Rendering ---------- */
+function render() {
+  $('results').hidden = $('heatpanel').hidden = $('detail').hidden = false;
+  const { names, acc, exact, total, secs, model } = state, n = names.length;
+  const K = acc.count;
+  const statsHtml = [
+    `<span>Squadre <b>${n}</b>${model.BYE >= 0 ? ' (+1 riposo)' : ''}</span>`,
+    `<span>Giornate <b>${state.G}</b></span>`,
+    exact ? `<span>Calendari analizzati <b>${fmtInt(K)}</b> (tutti, ${model.N}!)</span>`
+          : `<span>Campione <b>${fmtInt(K)}</b> su ${total > 1e15 ? total.toExponential(2).replace('.', ',') : fmtInt(total)} possibili · errore max ±${fmt(98 / Math.sqrt(K), 2)} punti %</span>`,
+    `<span>Tempo <b>${fmt(secs, 2)} s</b></span>`,
+  ];
+  $('runstats').innerHTML = statsHtml.join('');
+
+  const rows = names.map((nm, t) => ({ t, nm, ...teamStats(t) })).sort((a, b) => b.mean - a.mean || b.fp - a.fp);
+  const check = names.map((_, t) => allVsAllMean(t));
+  const checkOk = check.every((v, t) => v == null || Math.abs(v - acc.sum[t] / K) < (exact ? 1e-6 : 0.2));
+  if (check[0] != null) {
+    $('runstats').insertAdjacentHTML('beforeend', `<span>Verifica media "contro tutti" <b class="${checkOk ? 'pos' : 'neg'}">${checkOk ? (exact ? 'coincide' : 'coerente') : 'non coincide'}</b></span>`);
+  }
+
+  let h = `<thead><tr><th>#</th><th class="name">Squadra</th><th>Fantapunti</th><th>Punti medi</th><th>Dev. std</th><th>Min – Max</th><th>Pos. media</th><th>1° posto</th><th>Ultimo</th><th>Punti reali</th><th>Δ su media</th><th>Calendari meglio / peggio</th></tr></thead><tbody>`;
+  rows.forEach((r, i) => {
+    const d = r.real != null ? r.real - r.mean : null;
+    h += `<tr class="clickable${r.t === state.sel ? ' sel' : ''}" data-t="${r.t}">
+      <td>${i + 1}</td><td class="name">${esc(r.nm)}</td><td>${fmt(r.fp, 1)}</td><td><b>${fmt(r.mean, 2)}</b></td><td>${fmt(r.sd, 2)}</td>
+      <td>${r.min} – ${r.max}</td><td>${fmt(r.posMean, 2)}</td><td>${pct(r.first)}%</td><td>${pct(r.last)}%</td>
+      <td><input class="real" type="number" step="1" min="0" id="real-${r.t}" data-t="${r.t}" value="${r.real ?? ''}" aria-label="Punti reali ${esc(r.nm)}"></td>
+      <td class="delta">${d == null ? '–' : `<span class="${d >= 0 ? 'pos' : 'neg'}">${d >= 0 ? '+' : ''}${fmt(d, 2)}</span>`}</td>
+      <td class="share">${r.real == null ? '–' : `${pct(r.above)}% / ${pct(r.below)}%`}</td></tr>`;
+  });
+  $('summary').innerHTML = h + '</tbody>';
+
+  // Heatmap posizioni
+  let hh = `<thead><tr><th class="name">Squadra</th>${Array.from({ length: n }, (_, p) => `<th>${p + 1}°</th>`).join('')}</tr></thead><tbody>`;
+  rows.forEach(r => {
+    hh += `<tr><td class="name">${esc(r.nm)}</td>`;
+    for (let p = 0; p < n; p++) {
+      const v = acc.posHist[r.t * n + p] / K;
+      const a = Math.round(Math.min(1, v / 0.5) * 70);
+      hh += `<td class="cell" style="background:color-mix(in oklab, var(--accent) ${a}%, transparent);${a > 40 ? 'color:var(--accent-ink);' : ''}"><span>${v === 0 ? '·' : pct(v)}</span></td>`;
+    }
+    hh += '</tr>';
+  });
+  $('heat').innerHTML = hh + '</tbody>';
+
+  $('teamsel').innerHTML = names.map((nm, t) => `<option value="${t}"${t === state.sel ? ' selected' : ''}>${esc(nm)}</option>`).join('');
+  renderDetail();
+}
+
+function updateRealCells() {
+  // aggiorna solo Δ e percentuali senza ridisegnare gli input
+  for (const tr of $('summary').querySelectorAll('tbody tr')) {
+    const t = +tr.dataset.t, r = teamStats(t);
+    const d = r.real != null ? r.real - r.mean : null;
+    tr.querySelector('.delta').innerHTML = d == null ? '–' : `<span class="${d >= 0 ? 'pos' : 'neg'}">${d >= 0 ? '+' : ''}${fmt(d, 2)}</span>`;
+    tr.querySelector('.share').textContent = r.real == null ? '–' : `${pct(r.above)}% / ${pct(r.below)}%`;
+  }
+  renderDetail();
+}
+
+function renderDetail() {
+  const t = state.sel, { names, acc } = state, r = teamStats(t), K = acc.count, W = acc.maxPts + 1;
+  $('dtitle').textContent = names[t];
+  const check = allVsAllMean(t);
+  $('dstats').innerHTML = [
+    `<span>Punti medi <b>${fmt(r.mean, 2)}</b></span>`,
+    check != null ? `<span>Media "contro tutti" <b>${fmt(check, 2)}</b></span>` : '',
+    `<span>Intervallo <b>${r.min} – ${r.max}</b></span>`,
+    `<span>Posizione media <b>${fmt(r.posMean, 2)}</b></span>`,
+    `<span>Vince il campionato <b>${pct(r.first)}%</b></span>`,
+    r.real != null ? `<span>Punti reali <b>${r.real}</b> · calendari migliori <b>${pct(r.above)}%</b> · peggiori <b>${pct(r.below)}%</b></span>` : '',
+  ].join('');
+
+  // Istogramma
+  const svg = $('hist'), VW = 720, VH = 240, padL = 44, padR = 12, padT = 12, padB = 30;
+  let lo = r.min, hi = r.max;
+  if (r.real != null) { lo = Math.min(lo, r.real); hi = Math.max(hi, r.real); }
+  const span = hi - lo + 1, bw = (VW - padL - padR) / span;
+  let maxF = 0;
+  for (let p = r.min; p <= r.max; p++) maxF = Math.max(maxF, acc.hist[t * W + p] / K);
+  const yMax = Math.max(4, Math.ceil(maxF * 100 / 4) * 4) / 100;
+  const y = (f) => padT + (VH - padT - padB) * (1 - f / yMax);
+  let s = '';
+  for (let k = 0; k <= 4; k++) {
+    const f = yMax * k / 4, yy = y(f);
+    s += `<line class="axis" x1="${padL}" x2="${VW - padR}" y1="${yy}" y2="${yy}" stroke-width="${k === 0 ? 1 : 0.5}"/>`;
+    s += `<text x="${padL - 6}" y="${yy + 4}" text-anchor="end">${fmt(f * 100, 0)}%</text>`;
+  }
+  const step = Math.max(1, Math.ceil(span / 18));
+  for (let p = lo; p <= hi; p++) {
+    const f = (p >= 0 && p < W) ? acc.hist[t * W + p] / K : 0, x = padL + (p - lo) * bw;
+    if (f > 0) s += `<rect class="bar${p === r.real ? ' real' : ''}" x="${x + bw * 0.12}" y="${y(f)}" width="${bw * 0.76}" height="${y(0) - y(f)}"><title>${p} punti: ${pct(f)}% dei calendari</title></rect>`;
+    else if (p === r.real) s += `<rect class="bar real" x="${x + bw * 0.12}" y="${y(0) - 3}" width="${bw * 0.76}" height="3"><title>${p} punti: 0% dei calendari</title></rect>`;
+    if ((p - lo) % step === 0) s += `<text x="${x + bw / 2}" y="${VH - padB + 16}" text-anchor="middle">${p}</text>`;
+  }
+  const mx = padL + (r.mean - lo + 0.5) * bw;
+  s += `<line class="mean" x1="${mx}" x2="${mx}" y1="${padT}" y2="${y(0)}"/>`;
+  svg.innerHTML = s;
+
+  $('best').innerHTML = calendarTable(t, acc.maxPerm[t]);
+  $('worst').innerHTML = calendarTable(t, acc.minPerm[t]);
+  $('bestbox').querySelector('summary').textContent = `Il calendario più favorevole: ${acc.max[t]} punti`;
+  $('worstbox').querySelector('summary').textContent = `Il calendario più sfavorevole: ${acc.min[t]} punti`;
+}
+
+function calendarTable(t, perm) {
+  if (!perm) return '';
+  const { model, scores, o, names, glabels, G } = state, N = model.N;
+  const rounds = bergerRounds(N), slotOf = new Array(N);
+  perm.forEach((team, s) => { slotOf[team] = s; });
+  let h = '<thead><tr><th class="name">Giornata</th><th class="name">Avversario</th><th>Campo</th><th>Fantapunti</th><th>Risultato</th><th>Punti</th><th>Progressivo</th></tr></thead><tbody>';
+  let tot = 0;
+  for (let g = 0; g < G; g++) {
+    const pr = roundPairs(rounds, g).find(p => p[0] === slotOf[t] || p[1] === slotOf[t]);
+    const home = pr[0] === slotOf[t], opp = perm[home ? pr[1] : pr[0]];
+    let row;
+    if (opp === model.BYE) {
+      tot += o.riposo;
+      row = `<td class="name">Riposo</td><td>–</td><td>${fmt(scores[t][g], 1)}</td><td>–</td><td>${o.riposo}</td>`;
+    } else {
+      const sh = home ? scores[t][g] + o.casa : scores[opp][g] + o.casa, sa = home ? scores[opp][g] : scores[t][g];
+      const m = matchResult(sh, sa, o), my = home ? m.gh : m.ga, their = home ? m.ga : m.gh, p = home ? m.ph : m.pa;
+      tot += p;
+      const cls = my > their ? 'W' : my === their ? 'D' : 'L';
+      const fpMy = home ? sh : sa, fpOpp = home ? sa : sh;
+      row = `<td class="name">${esc(names[opp])}</td><td>${home ? 'Casa' : 'Trasferta'}</td><td>${fmt(fpMy, 1)} – ${fmt(fpOpp, 1)}</td><td class="res ${cls}">${my} – ${their}</td><td>${p}</td>`;
+    }
+    h += `<tr><td class="name">${esc(glabels[g])}</td>${row}<td>${tot}</td></tr>`;
+  }
+  return h + '</tbody>';
+}
+
+function copyTable() {
+  const { names, acc } = state, n = names.length, K = acc.count;
+  const lines = [['Squadra', 'Fantapunti', 'Punti medi', 'Dev std', 'Min', 'Max', 'Pos media', ...Array.from({ length: n }, (_, p) => `% ${p + 1}°`), 'Punti reali', '% calendari meglio', '% calendari peggio'].join('\t')];
+  names.forEach((nm, t) => {
+    const r = teamStats(t);
+    lines.push([nm, fmt(r.fp, 1), fmt(r.mean, 3), fmt(r.sd, 3), r.min, r.max, fmt(r.posMean, 3),
+      ...Array.from({ length: n }, (_, p) => fmt(acc.posHist[t * n + p] / K * 100, 3)),
+      r.real ?? '', r.real == null ? '' : fmt(r.above * 100, 3), r.real == null ? '' : fmt(r.below * 100, 3)].join('\t'));
+  });
+  const text = lines.join('\n'), btn = $('copy');
+  const ok = () => { btn.textContent = 'Copiata'; setTimeout(() => btn.textContent = 'Copia tabella', 1600); };
+  try {
+    navigator.clipboard.writeText(text).then(ok, () => fallbackCopy(text, ok));
+  } catch (e) { fallbackCopy(text, ok); }
+}
+function fallbackCopy(text, ok) {
+  const ta = $('data'), old = ta.value;
+  ta.value = text; ta.select();
+  let done = false;
+  try { done = document.execCommand('copy'); } catch (e) {}
+  ta.value = old;
+  if (done) ok(); else { $('status').textContent = 'Copia non riuscita: seleziona la tabella e copiala a mano.'; }
+}
+
+/* ---------- Eventi ---------- */
+$('run').addEventListener('click', run);
+$('sample').addEventListener('click', () => { $('data').value = sampleText(); run(); });
+$('file').addEventListener('change', (e) => {
+  const f = e.target.files[0]; if (!f) return;
+  const rd = new FileReader();
+  rd.onload = () => { $('data').value = String(rd.result); run(); };
+  rd.readAsText(f);
+  e.target.value = '';
+});
+$('summary').addEventListener('click', (e) => {
+  if (e.target.closest('input')) return;
+  const tr = e.target.closest('tr[data-t]'); if (!tr) return;
+  state.sel = +tr.dataset.t; $('teamsel').value = state.sel;
+  $('summary').querySelectorAll('tr.sel').forEach(x => x.classList.remove('sel')); tr.classList.add('sel');
+  renderDetail();
+});
+$('summary').addEventListener('input', (e) => {
+  const inp = e.target.closest('input.real'); if (!inp) return;
+  const v = inp.value.trim();
+  state.real[+inp.dataset.t] = v === '' || !isFinite(Number(v)) ? null : Math.round(Number(v));
+  updateRealCells();
+});
+$('teamsel').addEventListener('change', (e) => {
+  state.sel = +e.target.value;
+  $('summary').querySelectorAll('tbody tr').forEach(x => x.classList.toggle('sel', +x.dataset.t === state.sel));
+  renderDetail();
+});
+$('copy').addEventListener('click', copyTable);
+
+let draft = null;
+try { draft = localStorage.getItem('fantacalendari-dati'); } catch (e) {}
+$('data').value = draft || sampleText();
+$('data').addEventListener('input', () => { try { localStorage.setItem('fantacalendari-dati', $('data').value); } catch (e) {} });
+run();
+})();
+</script>
