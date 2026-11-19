@@ -236,7 +236,8 @@ code { font-family: var(--font-mono); font-size: .92em; }
       <li>Il calendario è un girone all'italiana con lo schema di Berger (lo stesso dei generatori di calendario delle leghe), ripetuto ciclicamente: con 8 squadre il girone dura 7 giornate e dall'ottava ricomincia, a campi invertiti.</li>
       <li>"Tutti i calendari possibili" sono tutti i modi di assegnare le squadre alle posizioni dello schema: <code>n!</code> assegnazioni (40.320 con 8 squadre, 3.628.800 con 10). Alcune assegnazioni producono lo stesso calendario, ma ogni calendario distinto compare lo stesso numero di volte, quindi le percentuali sono esatte.</li>
       <li>Con un numero dispari di squadre si aggiunge una squadra fantasma: chi la incontra riposa e riceve i punti indicati nelle regole.</li>
-      <li>Oltre 10 squadre le assegnazioni sono troppe (12! ≈ 479 milioni): si estrae un campione casuale uniforme. Le percentuali sono allora stime, con margine di errore indicato.</li>
+      <li>Oltre 10 squadre le assegnazioni sono troppe (12! ≈ 479 milioni). I punti di una squadra però dipendono solo dalla sequenza dei suoi avversari, e queste sequenze sono uniformi su tutti i calendari. Per questo punti medi e deviazione standard si calcolano con una formula esatta, minimo e massimo (con i relativi calendari) con l'algoritmo ungherese dell'assegnamento ottimo, e la distribuzione completa dei punti con un conteggio esatto su tutte le sequenze di avversari, quando non è troppo pesante (fino a circa 18 squadre).</li>
+      <li>Le posizioni in classifica dipendono invece dai punti di tutte le squadre insieme: per quelle si estrae un campione casuale uniforme di calendari, con il margine di errore indicato.</li>
       <li>Controllo di coerenza: senza bonus casa, la media dei punti su tutti i calendari coincide con la media dei punti che la squadra otterrebbe affrontando a turno tutte le altre in ogni giornata. Il valore è riportato accanto ai risultati.</li>
       <li>Lo spareggio con la somma dei fantapunti usa i fantapunti incollati, senza bonus casa. Regole come il modificatore o la differenza minima vanno già incluse nei fantapunti inseriti.</li>
     </ul>
@@ -416,10 +417,137 @@ function mergeAcc(into, a) {
   return into;
 }
 
+/* ===== Statistiche esatte dei punti di una squadra =====
+   I punti di una squadra dipendono solo dagli avversari che incontra nelle R = min(G, N-1) giornate
+   distinte dello schema. Con un'assegnazione uniforme, fissata la posizione s della squadra, la sequenza
+   degli avversari è uniforme tra tutte le sequenze di avversari distinti. W[r][b] = punti contro b
+   nella giornata-tipo r (sommati su tutti i cicli in cui si ripete). */
+function teamWeights(m, a, s) {
+  const { N, P, G } = m, rounds = bergerRounds(N), R = Math.min(G, N - 1);
+  const W = [], opp = [];
+  for (let r = 0; r < R; r++) {
+    const pr = rounds[r].find(p => p[0] === s || p[1] === s), t = pr[0] === s ? pr[1] : pr[0];
+    const row = new Float64Array(N);
+    for (let b = 0; b < N; b++) if (b !== a) row[b] = P[((s * N + t) * N + a) * N + b];
+    W.push(row); opp.push(t);
+  }
+  return { W, opp };
+}
+
+/* Gruppi di posizioni con gli stessi pesi (senza bonus casa sono tutte uguali). */
+function teamSlotGroups(m, a) {
+  const groups = new Map();
+  for (let s = 0; s < m.N; s++) {
+    const tw = teamWeights(m, a, s), key = tw.W.map(r => Array.from(r).join(',')).join('|');
+    if (groups.has(key)) groups.get(key).weight++; else groups.set(key, { ...tw, s, weight: 1 });
+  }
+  return [...groups.values()].map(g => ({ ...g, weight: g.weight / m.N }));
+}
+
+/* Media e momento secondo esatti per una matrice W (avversari distinti, uniformi). */
+function exactMoments(W, a, N) {
+  const K = N - 1, R = W.length, S = W.map(r => r.reduce((x, y) => x + y, 0)), Q = W.map(r => r.reduce((x, y) => x + y * y, 0));
+  let mean = 0, m2 = 0;
+  for (let r = 0; r < R; r++) { mean += S[r] / K; m2 += Q[r] / K; }
+  if (K > 1) for (let r = 0; r < R; r++) for (let q = 0; q < R; q++) if (q !== r) {
+    let d = 0;
+    for (let b = 0; b < N; b++) d += W[r][b] * W[q][b];
+    m2 += (S[r] * S[q] - d) / (K * (K - 1));
+  }
+  return { mean, m2 };
+}
+
+/* Assegnamento ottimo (algoritmo ungherese, minimizza): cost n x mcols con n <= mcols. Restituisce la colonna di ogni riga. */
+function hungarian(cost) {
+  const n = cost.length, mc = cost[0].length, INF = Infinity;
+  const u = new Float64Array(n + 1), v = new Float64Array(mc + 1), p = new Int32Array(mc + 1), way = new Int32Array(mc + 1);
+  for (let i = 1; i <= n; i++) {
+    p[0] = i; let j0 = 0;
+    const minv = new Float64Array(mc + 1).fill(INF), used = new Uint8Array(mc + 1);
+    do {
+      used[j0] = 1; const i0 = p[j0]; let delta = INF, j1 = 0;
+      for (let j = 1; j <= mc; j++) if (!used[j]) {
+        const cur = cost[i0 - 1][j - 1] - u[i0] - v[j];
+        if (cur < minv[j]) { minv[j] = cur; way[j] = j0; }
+        if (minv[j] < delta) { delta = minv[j]; j1 = j; }
+      }
+      for (let j = 0; j <= mc; j++) { if (used[j]) { u[p[j]] += delta; v[j] -= delta; } else minv[j] -= delta; }
+      j0 = j1;
+    } while (p[j0] !== 0);
+    do { const j1 = way[j0]; p[j0] = p[j1]; j0 = j1; } while (j0);
+  }
+  const col = new Int32Array(n);
+  for (let j = 1; j <= mc; j++) if (p[j]) col[p[j] - 1] = j - 1;
+  return col;
+}
+
+/* Calendario (assegnazione completa) che dà alla squadra a il massimo (sign=+1) o il minimo (sign=-1) dei punti. */
+function extremeCalendar(m, a, groups, sign) {
+  const N = m.N, others = [];
+  for (let b = 0; b < N; b++) if (b !== a) others.push(b);
+  let best = null;
+  for (const g of groups) {
+    const cost = g.W.map(row => others.map(b => -sign * row[b]));
+    const col = hungarian(cost);
+    let val = 0;
+    g.W.forEach((row, r) => { val += row[others[col[r]]]; });
+    if (!best || sign * val > sign * best.val) {
+      const perm = new Array(N).fill(-1), usedT = new Uint8Array(N);
+      perm[g.s] = a; usedT[a] = 1;
+      g.opp.forEach((t, r) => { perm[t] = others[col[r]]; usedT[others[col[r]]] = 1; });
+      let k = 0;
+      for (let s = 0; s < N; s++) if (perm[s] < 0) { while (usedT[k]) k++; perm[s] = k; usedT[k] = 1; }
+      best = { val, perm };
+    }
+  }
+  return best;
+}
+
+/* Distribuzione esatta dei punti: programmazione dinamica sull'insieme degli avversari già incontrati. */
+function dpCost(N, R, span) {
+  let c = 0, comb = 1;
+  for (let r = 0; r < R; r++) { c += comb * (N - 1 - r); comb = comb * (N - 1 - r) / (r + 1); }
+  return c * span;
+}
+function exactDistribution(groups, a, N, maxPts) {
+  const others = [];
+  for (let b = 0; b < N; b++) if (b !== a) others.push(b);
+  const K = others.length, out = new Float64Array(maxPts + 1);
+  for (const g of groups) {
+    const R = g.W.length;
+    let cur = new Map([[0, Float64Array.of(1)]]);
+    for (let r = 0; r < R; r++) {
+      const next = new Map(), inv = 1 / (K - r), row = g.W[r];
+      for (const [mask, h] of cur) {
+        for (let j = 0; j < K; j++) {
+          if (mask & (1 << j)) continue;
+          const w = row[others[j]], nm = mask | (1 << j);
+          let arr = next.get(nm);
+          if (!arr || arr.length < h.length + w) {
+            const bigger = new Float64Array(Math.max(h.length + w, arr ? arr.length : 0));
+            if (arr) bigger.set(arr);
+            arr = bigger; next.set(nm, arr);
+          }
+          for (let p = 0; p < h.length; p++) if (h[p]) arr[p + w] += h[p] * inv;
+        }
+      }
+      cur = next;
+    }
+    for (const h of cur.values()) for (let p = 0; p < h.length; p++) out[p] += h[p] * g.weight;
+  }
+  return out;
+}
+
 /* Codice eseguito dentro il Worker */
 function workerMain() {
   self.onmessage = (e) => {
     const { model, job } = e.data;
+    if (job.kind === 'dist') {
+      const dist = {};
+      for (const a of job.teams) dist[a] = exactDistribution(teamSlotGroups(model, a), a, model.N, model.maxPts);
+      self.postMessage({ type: 'dist', dist });
+      return;
+    }
     const report = (done) => self.postMessage({ type: 'progress', done });
     const acc = job.kind === 'exact'
       ? runExact(model, job.firsts, report)
@@ -708,6 +836,28 @@ function run() {
     for (let w = 0; w < nw; w++) jobs.push({ kind: 'sample', count: Math.floor(target / nw) + (w < target % nw ? 1 : 0), seed: (seed0 + w * 7919) >>> 0 });
   }
 
+  /* Con il campione: punti medi, deviazione, minimo, massimo e calendari estremi si calcolano in modo esatto
+     (formula chiusa e assegnamento ottimo); la distribuzione esatta dei punti se il costo è accettabile. */
+  let exactPts = null, distJobs = 0;
+  if (!exact) {
+    exactPts = [];
+    let cost = 0;
+    const R = Math.min(model.G, model.N - 1);
+    for (let a = 0; a < model.n; a++) {
+      const groups = teamSlotGroups(model, a);
+      let mean = 0, m2 = 0;
+      for (const g of groups) { const x = exactMoments(g.W, a, model.N); mean += x.mean * g.weight; m2 += x.m2 * g.weight; }
+      exactPts.push({ mean, m2, max: extremeCalendar(model, a, groups, 1), min: extremeCalendar(model, a, groups, -1), dist: null });
+      cost += groups.length * dpCost(model.N, R, model.maxPts + 1);
+    }
+    if (cost <= 3e9) {
+      const nd = Math.min(nw, model.n), dj = [];
+      for (let w = 0; w < nd; w++) dj.push({ kind: 'dist', teams: [] });
+      for (let a = 0; a < model.n; a++) dj[a % nd].teams.push(a);
+      jobs.push(...dj); distJobs = nd;
+    }
+  }
+
   if (running) running.forEach(w => w.terminate());
   $('run').disabled = true;
   status.textContent = exact ? `Calcolo di ${fmtInt(target)} assegnazioni…` : `Estrazione di ${fmtInt(target)} calendari casuali…`;
@@ -718,6 +868,19 @@ function run() {
 
   const finish = () => {
     $('run').disabled = false; running = null;
+    let sampleDev = null;
+    if (exactPts) {
+      const K = merged.count, W = merged.maxPts + 1;
+      sampleDev = 0;
+      exactPts.forEach((x, t) => {
+        sampleDev = Math.max(sampleDev, Math.abs(merged.sum[t] / K - x.mean));
+        merged.sum[t] = x.mean * K; merged.sumSq[t] = x.m2 * K;
+        merged.max[t] = x.max.val; merged.maxPerm[t] = x.max.perm;
+        merged.min[t] = x.min.val; merged.minPerm[t] = x.min.perm;
+        if (x.dist) for (let p = 0; p < W; p++) merged.hist[t * W + p] = (x.dist[p] || 0) * K;
+      });
+    }
+    const distExact = exact || (exactPts && exactPts.every(x => x.dist));
     $('bar').style.width = '100%';
     const secs = (performance.now() - t0) / 1000;
     status.textContent = `Fatto in ${fmt(secs, secs < 10 ? 2 : 1)} s.`;
@@ -728,7 +891,7 @@ function run() {
       const rp = realPoints(league.names, league.played, o.pv, o.pn);
       real = data.names.map(n => rp[n]);
     }
-    state = { ...data, o, model, acc: merged, exact, total, secs, real, sel: Math.min(prevSel, data.names.length - 1) };
+    state = { ...data, o, model, acc: merged, exact, total, secs, real, distExact, sampleDev, sel: Math.min(prevSel, data.names.length - 1) };
     render();
   };
 
@@ -738,6 +901,12 @@ function run() {
       const w = new Worker(getWorkerURL());
       w.onmessage = (e) => {
         if (e.data.type === 'progress') { done[idx] = e.data.done; setBar(); return; }
+        if (e.data.type === 'dist') {
+          for (const t in e.data.dist) exactPts[+t].dist = e.data.dist[t];
+          w.terminate();
+          if (++finished === jobs.length) finish();
+          return;
+        }
         const a = e.data.acc;
         merged = merged ? mergeAcc(merged, a) : a;
         done[idx] = a.count; setBar();
@@ -758,6 +927,10 @@ function run() {
     // Fallback senza Worker: calcolo nel thread principale
     setTimeout(() => {
       for (const job of jobs) {
+        if (job.kind === 'dist') {
+          for (const t of job.teams) exactPts[t].dist = exactDistribution(teamSlotGroups(model, t), t, model.N, model.maxPts);
+          continue;
+        }
         const a = job.kind === 'exact' ? runExact(model, job.firsts) : runSample(model, job.count, job.seed);
         merged = merged ? mergeAcc(merged, a) : a;
       }
@@ -808,15 +981,20 @@ function render() {
     `<span>Squadre <b>${n}</b>${model.BYE >= 0 ? ' (+1 riposo)' : ''}</span>`,
     `<span>Giornate <b>${state.G}</b></span>`,
     exact ? `<span>Calendari analizzati <b>${fmtInt(K)}</b> (tutti, ${model.N}!)</span>`
-          : `<span>Campione <b>${fmtInt(K)}</b> su ${total > 1e15 ? total.toExponential(2).replace('.', ',') : fmtInt(total)} possibili · errore max ±${fmt(98 / Math.sqrt(K), 2)} punti %</span>`,
+          : `<span>Campione <b>${fmtInt(K)}</b> su ${total > 1e15 ? total.toExponential(2).replace('.', ',') : fmtInt(total)} possibili</span>`,
+    exact ? '' : `<span>Esatti: <b>punti medi, dev. std, min e max${state.distExact ? ', distribuzione dei punti' : ''}</b></span>`,
+    exact ? '' : `<span>Stimate dal campione: <b>posizioni${state.distExact ? '' : ', distribuzione dei punti'}</b> (errore max ±${fmt(98 / Math.sqrt(K), 2)} punti %)</span>`,
     `<span>Tempo <b>${fmt(secs, 2)} s</b></span>`,
   ];
   $('runstats').innerHTML = statsHtml.join('');
 
   const rows = names.map((nm, t) => ({ t, nm, ...teamStats(t) })).sort((a, b) => b.mean - a.mean || b.fp - a.fp);
   const check = names.map((_, t) => allVsAllMean(t));
-  const checkOk = check.every((v, t) => v == null || Math.abs(v - acc.sum[t] / K) < (exact ? 1e-6 : 0.2));
-  if (check[0] != null) {
+  const checkOk = check.every((v, t) => v == null || Math.abs(v - acc.sum[t] / K) < 1e-6);
+  if (!exact && state.sampleDev != null) {
+    $('runstats').insertAdjacentHTML('beforeend', `<span>Scarto massimo tra media del campione e media esatta <b>${fmt(state.sampleDev, 3)}</b> punti</span>`);
+  }
+  if (check[0] != null && exact) {
     $('runstats').insertAdjacentHTML('beforeend', `<span>Verifica media "contro tutti" <b class="${checkOk ? 'pos' : 'neg'}">${checkOk ? (exact ? 'coincide' : 'coerente') : 'non coincide'}</b></span>`);
   }
 
