@@ -155,8 +155,8 @@ code { font-family: var(--font-mono); font-size: .92em; }
     <div class="panel">
       <h2>Regole della lega</h2>
       <div class="rules">
-        <div class="field"><label for="soglia">Soglia 1° gol</label><input id="soglia" type="number" step="0.5" value="66"></div>
-        <div class="field"><label for="fascia">Ampiezza fascia gol</label><input id="fascia" type="number" step="0.5" min="0.5" value="6"></div>
+        <div class="field full"><label for="soglie">Soglie dei gol (fantapunti)</label><input id="soglie" type="text" inputmode="decimal" value="66, 71, 76, 81, 86, 90" spellcheck="false" style="background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:6px 8px;width:100%;font-family:var(--font-mono)">
+          <span class="hint">Una soglia per gol: 1° gol, 2° gol e così via. Oltre l'ultima si prosegue con l'ultimo passo. Esempi: <code>66, 72</code> = un gol ogni 6; <code>66, 71, 76, 81, 86, 90</code> = ogni 5, poi ogni 4 dal 6° gol.</span></div>
         <div class="field"><label for="pv">Punti vittoria</label><input id="pv" type="number" step="1" value="3"></div>
         <div class="field"><label for="pn">Punti pareggio</label><input id="pn" type="number" step="1" value="1"></div>
         <div class="field"><label for="casa">Bonus casa (fantapunti)</label><input id="casa" type="number" step="0.5" value="0"></div>
@@ -176,7 +176,7 @@ code { font-family: var(--font-mono); font-size: .92em; }
         </div>
         <div class="field"><label for="samples">Calendari nel campione</label><input id="samples" type="number" step="100000" min="10000" value="2000000"></div>
       </div>
-      <span class="hint">Gol: sotto la soglia 0, poi 1 gol in più ogni fascia (66 → 1, 72 → 2, 78 → 3…). In automatico il calcolo è esatto fino a 10 squadre; oltre si usa un campione casuale.</span>
+      <span class="hint">In automatico il calcolo è esatto fino a 10 squadre; oltre si usa un campione casuale.</span>
       <button type="button" class="primary" id="run">Calcola</button>
       <div class="progress" aria-hidden="true"><div id="bar"></div></div>
       <p class="status" id="status" role="status"></p>
@@ -245,9 +245,14 @@ code { font-family: var(--font-mono); font-size: .92em; }
 
 <script id="engine">
 /* ===== Motore di calcolo: usato sia dalla pagina sia dai Web Worker ===== */
-function goalsFrom(x, soglia, fascia) {
-  if (!(x >= soglia)) return 0;
-  return Math.floor((x - soglia) / fascia + 1e-9) + 1;
+/* thr: soglie crescenti (1° gol, 2° gol, ...); oltre l'ultima un gol in più ogni "step" fantapunti */
+function goalsFrom(x, thr, step) {
+  if (!(x >= thr[0])) return 0;
+  const L = thr.length, last = thr[L - 1];
+  if (x >= last) return L + Math.floor((x - last) / step + 1e-9);
+  let k = 1;
+  while (k < L && x >= thr[k]) k++;
+  return k;
 }
 
 /* Schema di Berger per N posizioni (N pari). Restituisce N-1 giornate, ciascuna lista di [casa, trasferta]. */
@@ -272,7 +277,7 @@ function roundPairs(rounds, g) {
 }
 
 function matchResult(sh, sa, o) {
-  const gh = goalsFrom(sh, o.soglia, o.fascia), ga = goalsFrom(sa, o.soglia, o.fascia);
+  const gh = goalsFrom(sh, o.thr, o.step), ga = goalsFrom(sa, o.thr, o.step);
   return { gh, ga, ph: gh > ga ? o.pv : gh === ga ? o.pn : 0, pa: ga > gh ? o.pv : gh === ga ? o.pn : 0 };
 }
 
@@ -479,16 +484,20 @@ function parseLeagueGrid(grid) {
   return { names, scores, played, partial };
 }
 
-/* Cerca soglia, ampiezza fascia e bonus casa che riproducono tutti i risultati del file. */
-function inferRules(played) {
+/* Verifica le soglie impostate sui risultati del file; se non tornano, cerca soglie a passo costante (e bonus casa). */
+function fitsRules(ms, thr, step, casa) {
+  return ms.every(m => goalsFrom(m.fh + casa, thr, step) === m.gh && goalsFrom(m.fa, thr, step) === m.ga);
+}
+function inferRules(played, current) {
   const ms = played.flatMap(d => d.matches);
+  if (current && fitsRules(ms, current.thr, current.step, current.casa)) return { ...current, kept: true };
   let best = null;
   for (const casa of [0, 1, 2, 0.5, 1.5, 3]) {
     for (let soglia = 60; soglia <= 72; soglia += 0.5) {
       for (let fascia = 2; fascia <= 10; fascia += 0.5) {
-        if (ms.every(m => goalsFrom(m.fh + casa, soglia, fascia) === m.gh && goalsFrom(m.fa, soglia, fascia) === m.ga)) {
+        if (fitsRules(ms, [soglia], fascia, casa)) {
           const cost = (casa ? 100 : 0) + Math.abs(soglia - 66) + Math.abs(fascia - 6) / 10;
-          if (!best || cost < best.cost) best = { soglia, fascia, casa, cost };
+          if (!best || cost < best.cost) best = { thr: [soglia, soglia + fascia], step: fascia, casa, cost, kept: false };
         }
       }
     }
@@ -568,13 +577,29 @@ function parseData(text) {
   return { names, scores, G, glabels };
 }
 
+/* "66, 71, 76" / "66 71 76" / "66; 71,5; 77" -> soglie numeriche */
+function parseThresholds(txt) {
+  const t = String(txt).replace(/,(?=\s|\d{2,}|$)/g, ' ').replace(/,/g, '.');
+  const v = t.split(/[;\s]+/).filter(Boolean).map(Number);
+  if (v.length < 2) return { error: 'servono almeno due valori, es. 66, 72' };
+  if (v.some(x => !isFinite(x))) return { error: 'solo numeri' };
+  for (let i = 1; i < v.length; i++) if (!(v[i] > v[i - 1])) return { error: 'devono essere crescenti' };
+  return { thr: v, step: v[v.length - 1] - v[v.length - 2] };
+}
+function describeThresholds(o) {
+  const list = o.thr.map(x => fmt(x, x % 1 ? 1 : 0)).join(', ');
+  return `${list}, poi un gol ogni ${fmt(o.step, o.step % 1 ? 1 : 0)}`;
+}
+function thresholdsText(thr) { return thr.map(x => String(x).replace('.', ',')).join(thr.some(y => y % 1) ? '; ' : ', '); }
+function saveRules() { try { localStorage.setItem('fantacalendari-soglie', $('soglie').value); } catch (e) {} }
+
 function readRules() {
   const num = (id) => Number($(id).value);
-  const o = { soglia: num('soglia'), fascia: num('fascia'), pv: num('pv'), pn: num('pn'), casa: num('casa'),
+  const th = parseThresholds($('soglie').value);
+  const o = { thr: th.thr, step: th.step, pv: num('pv'), pn: num('pn'), casa: num('casa'),
               riposo: num('riposo'), tb: $('tb').value, mode: $('mode').value, samples: Math.round(num('samples')) };
   const bad = [];
-  if (!isFinite(o.soglia)) bad.push('soglia');
-  if (!(o.fascia > 0)) bad.push('ampiezza fascia (deve essere maggiore di 0)');
+  if (th.error) bad.push('soglie dei gol (' + th.error + ')');
   for (const k of ['pv', 'pn', 'riposo']) if (!Number.isInteger(o[k])) bad.push('punti vittoria/pareggio/riposo (numeri interi)');
   if (!isFinite(o.casa)) bad.push('bonus casa');
   if (!(o.samples >= 1000)) bad.push('calendari nel campione (almeno 1.000)');
@@ -603,16 +628,20 @@ function importLeague(grid) {
   let lg;
   try { lg = parseLeagueGrid(grid); }
   catch (e) { info.className = 'status err'; info.textContent = 'File non riconosciuto. ' + e.message; league = null; return false; }
-  const rules = inferRules(lg.played);
-  if (rules) { $('soglia').value = rules.soglia; $('fascia').value = rules.fascia; $('casa').value = rules.casa; }
+  const cur = parseThresholds($('soglie').value);
+  const rules = inferRules(lg.played, cur.error ? null : { thr: cur.thr, step: cur.step, casa: Number($('casa').value) || 0 });
+  if (rules && !rules.kept) { $('soglie').value = thresholdsText(rules.thr); $('casa').value = rules.casa; saveRules(); }
   $('data').value = leagueToText(lg);
   try { localStorage.setItem('fantacalendari-dati', $('data').value); } catch (e) {}
   league = lg;
   const nums = lg.played.map(d => d.num);
   const msg = [`Importate ${lg.names.length} squadre e ${lg.played.length} giornate giocate (${nums[0]}ª–${nums[nums.length - 1]}ª).`];
+  const nm = lg.played.reduce((a, d) => a + d.matches.length, 0);
+  const top = Math.max(...lg.scores.flat());
   msg.push(rules
-    ? `Fasce gol ricavate dai risultati: 1° gol a ${fmt(rules.soglia, 1)}, poi uno ogni ${fmt(rules.fascia, 1)} punti${rules.casa ? `, bonus casa ${fmt(rules.casa, 1)}` : ''}. Riproducono tutti i ${lg.played.reduce((a, d) => a + d.matches.length, 0)} risultati del file.`
-    : 'Attenzione: nessuna combinazione di soglia e fascia riproduce tutti i risultati del file. Controlla le regole a mano.');
+    ? (rules.kept ? `Le soglie impostate (${describeThresholds(rules)}) riproducono tutti i ${nm} risultati del file.`
+                  : `Soglie dei gol ricavate dai risultati: ${describeThresholds(rules)}${rules.casa ? `, bonus casa ${fmt(rules.casa, 1)}` : ''}. Riproducono tutti i ${nm} risultati del file, ma sono verificabili solo fino a ${fmt(top, 1)} fantapunti (il punteggio più alto): se la lega cambia fasce più in alto, correggile.`)
+    : 'Attenzione: né le soglie impostate né soglie a passo costante riproducono tutti i risultati del file. Controlla le regole a mano.');
   if (lg.partial.length) msg.push(`Ignorate le giornate non complete: ${lg.partial.map(d => d.num + 'ª').join(', ')}.`);
   msg.push('I punti reali vengono dai risultati del file.');
   info.textContent = msg.join(' ');
@@ -967,7 +996,7 @@ function exportModel() {
     ['Squadre', n + (model.BYE >= 0 ? ' (+1 riposo)' : '')],
     ['Giornate', G],
     ['Calendari', exact ? `${fmtInt(K)} (tutti, ${model.N}!)` : `campione casuale di ${fmtInt(K)} su ${total > 1e15 ? total.toExponential(2) : fmtInt(total)} possibili`],
-    ['Gol', `1° gol a ${fmt(o.soglia, 1)}, poi uno ogni ${fmt(o.fascia, 1)} fantapunti`],
+    ['Soglie gol', describeThresholds(o)],
     ['Punti', `vittoria ${o.pv}, pareggio ${o.pn}, sconfitta 0` + (model.BYE >= 0 ? `, riposo ${o.riposo}` : '')],
     ['Bonus casa', fmt(o.casa, 1)],
     ['Parità di punti', o.tb === 'fp' ? 'conta la somma dei fantapunti' : 'pari merito'],
@@ -1246,6 +1275,8 @@ $('pdf').addEventListener('click', exportPDF);
 let draft = null;
 try { draft = localStorage.getItem('fantacalendari-dati'); } catch (e) {}
 $('data').value = draft || sampleText();
+try { const sv = localStorage.getItem('fantacalendari-soglie'); if (sv) $('soglie').value = sv; } catch (e) {}
+$('soglie').addEventListener('input', saveRules);
 $('data').addEventListener('input', () => { try { localStorage.setItem('fantacalendari-dati', $('data').value); } catch (e) {} });
 run();
 })();
