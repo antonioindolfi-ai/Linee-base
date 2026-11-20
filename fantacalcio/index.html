@@ -1152,6 +1152,11 @@ async function offerFile(filename, data) {
     }
     return;
   }
+  if (window.claude) {
+    // Dentro claude.ai ma senza salvataggio file (es. visitatore senza account): il download diretto sarebbe bloccato
+    exportMsg('Il salvataggio dei file non è disponibile in questa vista. Usa "Copia tabella" e incolla in Excel, oppure apri la pagina dal file su GitHub.', true);
+    return;
+  }
   // Pagina aperta fuori dal visualizzatore (es. file locale): download diretto
   const blob = data instanceof Blob ? data : new Blob([data]);
   const a = document.createElement('a');
