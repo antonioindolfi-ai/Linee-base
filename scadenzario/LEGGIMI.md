@@ -3,6 +3,9 @@
 Strumento in **un solo file** (`scadenzario.html`) che estrae le scadenze dalle email e le organizza in un calendario.
 Si apre con un doppio clic in Edge, Chrome o Firefox. Non va installato e non servono permessi di amministratore.
 
+C'è anche una **versione automatica** per la posta su Microsoft 365: crea da sola gli eventi nel calendario Outlook,
+con le stesse regole. Le istruzioni sono in [power-automate/GUIDA.md](power-automate/GUIDA.md).
+
 ## Riservatezza: nessun dato esce mentre lo strumento è in uso
 
 ### Cosa garantisce la pagina
@@ -66,6 +69,7 @@ anche questa via è chiusa.
 - Date in forma numerica (`15/12/2026`, `15.12.26`), testuale (`martedì 15 dicembre 2026`, `15 dic. 2026`) e senza anno.
 - Termini relativi: `entro 30 (trenta) giorni`, `entro 5 giorni lavorativi`, `entro fine mese`, `entro domani`,
   `per lunedì prossimo`. Sono calcolati dalla data della email e segnalati come da verificare.
+- Espressioni come «per il 5 dicembre» e «il 10 dicembre scade il termine».
 - Orari (`alle ore 10:30`, `h. 15.00`).
 - Categorie: udienza, sindacato ispettivo, contenzioso, liquidazioni, adempimenti (performance, anticorruzione,
   trasparenza, privacy), riunioni.

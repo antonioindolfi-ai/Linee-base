@@ -1,0 +1,26 @@
+{
+ "avvocatura": {
+  "oggetto": "R: Ricorso TAR Lazio R.G. 4567/2026 – richiesta relazione",
+  "mittente": "Avvocatura <avv@example.it>",
+  "ricevuta": "2026-11-18T11:05:00+01:00",
+  "corpo": "Gentili colleghi,\n\ncon riferimento alla nota prot. n. 12345 del 12/11/2026 e al ricorso R.G. 4567/2026\nproposto dinanzi al TAR Lazio avverso il decreto ministeriale 3 ottobre 2026,\nsi chiede di trasmettere la relazione istruttoria entro il 10 dicembre 2026.\n\nL'udienza pubblica è fissata per il 15/01/2027 alle ore 10:30.\nSi ricorda che ai sensi della legge 30 dicembre 2010, n. 240 ...\n\nCordiali saluti\nAvv. Bianchi\n\nIl giorno mar 10 nov 2026 alle ore 09:12 Mario Rossi <m.rossi@example.it> ha scritto:\n> Vi inoltro il ricorso notificato il 5 novembre 2026.\n"
+ },
+ "sindacato": {
+  "oggetto": "I: Interrogazione 4-01234 – elementi di risposta",
+  "mittente": "Ufficio legislativo <legislativo@example.it>",
+  "ricevuta": "2026-11-20T08:00:00+01:00",
+  "corpo": "<div>Buongiorno,<br>si trasmette l'interrogazione n. 4-01234 dell'On. Esempio.<br>\nSi prega di fornire gli elementi di risposta <b>entro 5 giorni lavorativi</b> e comunque per lunedì prossimo.<br><br>\nInviato: mercoledì 18 novembre 2026 09:30</div>"
+ },
+ "pec_originale": {
+  "oggetto": "Richiesta di pagamento spese legali – sentenza n. 812/2026",
+  "mittente": "Studio Legale Verdi <studio@pec.example.it>",
+  "ricevuta": "2026-11-17T16:40:00+01:00",
+  "corpo": "<html><head><style>p{color:red}</style></head><body><p>Spett.le Direzione,</p>\n<p>si richiede il pagamento della parcella relativa alle spese legali liquidate con sentenza n. 812/2026.\nIl pagamento dovrà avvenire <b>entro 30 (trenta) giorni dalla ricezione della presente</b>.</p>\n<p>Inoltre, la riunione di coordinamento si terr&agrave; gioved&igrave; 3 dicembre alle 15.00 in videoconferenza.</p>\n<p>Avverso il presente provvedimento &egrave; ammesso ricorso al TAR entro 60 giorni.</p>\n<img src=\"http://tracker.example.com/pixel.gif\"></body></html>"
+ },
+ "risposta_con_citazione": {
+  "oggetto": "R: R: Ricorso TAR Lazio R.G. 4567/2026 – richiesta relazione",
+  "mittente": "Collega <collega@example.it>",
+  "ricevuta": "2026-11-19T09:00:00+01:00",
+  "corpo": "<html><head><style>p.MsoNormal{margin:0}</style></head><body><p class=\"MsoNormal\">Ricevuto, me ne occupo io.<o:p></o:p></p><div style=\"border-top:solid #E1E1E1 1.0pt\"><p class=\"MsoNormal\"><b>Da:</b> Avvocatura (fittizia) &lt;avv@example.it&gt;<br>\n<b>Inviato:</b> mercoledì 18 novembre 2026 11:05<br>\n<b>A:</b> Ufficio I<br>\n<b>Oggetto:</b> R: Ricorso TAR Lazio R.G. 4567/2026 – richiesta relazione</p></div><p class=\"MsoNormal\">Gentili colleghi,<br>\n<br>\ncon riferimento alla nota prot. n. 12345 del 12/11/2026 e al ricorso R.G. 4567/2026<br>\nproposto dinanzi al TAR Lazio avverso il decreto ministeriale 3 ottobre 2026,<br>\nsi chiede di trasmettere la relazione istruttoria entro il 10 dicembre 2026.<br>\n<br>\nL'udienza pubblica è fissata per il 15/01/2027 alle ore 10:30.<br>\nSi ricorda che ai sensi della legge 30 dicembre 2010, n. 240 ...<br>\n<br>\nCordiali saluti<br>\nAvv. Bianchi<br>\n<br>\nIl giorno mar 10 nov 2026 alle ore 09:12 Mario Rossi &lt;m.rossi@example.it&gt; ha scritto:<br>\n&gt; Vi inoltro il ricorso notificato il 5 novembre 2026.<br>\n</p></body></html>"
+ }
+}

@@ -1,0 +1,57 @@
+Content-Type: multipart/mixed; boundary="===============2318332666790949533=="
+MIME-Version: 1.0
+Subject: POSTA CERTIFICATA: Richiesta di pagamento spese legali
+From: Per conto di: studio@pec.example.it <posta-certificata@pec.example.it>
+Date: Tue, 17 Nov 2026 16:40:15 +0100
+X-Trasporto: posta-certificata
+
+--===============2318332666790949533==
+Content-Type: multipart/alternative;
+ boundary="===============7610835976033803675=="
+MIME-Version: 1.0
+
+--===============7610835976033803675==
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: quoted-printable
+
+Messaggio di posta certificata
+
+Il giorno 17/11/2026 alle ore 16:40:15 (+0100) il messaggio "Richiesta" =C3=
+=A8 stato inviato da "studio@pec.example.it" indirizzato a: dg@pec.example.=
+it
+Il messaggio originale =C3=A8 incluso in allegato.
+--===============7610835976033803675==--
+
+--===============2318332666790949533==
+Content-Type: application/xml
+MIME-Version: 1.0
+Content-Disposition: attachment; filename="daticert.xml"
+
+<postacert/>
+--===============2318332666790949533==
+Content-Type: message/rfc822
+MIME-Version: 1.0
+Content-Disposition: attachment; filename="postacert.eml"
+
+Content-Type: text/html; charset="windows-1252"
+MIME-Version: 1.0
+Content-Transfer-Encoding: base64
+Subject: =?utf-8?q?Richiesta_di_pagamento_spese_legali_=E2=80=93_sentenza_n=2E_812/20?=
+ =?utf-8?q?26?=
+From: Studio Legale Verdi <studio@pec.example.it>
+Date: Tue, 17 Nov 2026 16:40:00 +0100
+Message-ID: <inner@pec.example.it>
+
+PGh0bWw+PGhlYWQ+PHN0eWxlPnB7Y29sb3I6cmVkfTwvc3R5bGU+PC9oZWFkPjxib2R5PjxwPlNw
+ZXR0LmxlIERpcmV6aW9uZSw8L3A+CjxwPnNpIHJpY2hpZWRlIGlsIHBhZ2FtZW50byBkZWxsYSBw
+YXJjZWxsYSByZWxhdGl2YSBhbGxlIHNwZXNlIGxlZ2FsaSBsaXF1aWRhdGUgY29uIHNlbnRlbnph
+IG4uIDgxMi8yMDI2LgpJbCBwYWdhbWVudG8gZG92cuAgYXZ2ZW5pcmUgPGI+ZW50cm8gMzAgKHRy
+ZW50YSkgZ2lvcm5pIGRhbGxhIHJpY2V6aW9uZSBkZWxsYSBwcmVzZW50ZTwvYj4uPC9wPgo8cD5J
+bm9sdHJlLCBsYSByaXVuaW9uZSBkaSBjb29yZGluYW1lbnRvIHNpIHRlcnImYWdyYXZlOyBnaW92
+ZWQmaWdyYXZlOyAzIGRpY2VtYnJlIGFsbGUgMTUuMDAgaW4gdmlkZW9jb25mZXJlbnphLjwvcD4K
+PHA+QXZ2ZXJzbyBpbCBwcmVzZW50ZSBwcm92dmVkaW1lbnRvICZlZ3JhdmU7IGFtbWVzc28gcmlj
+b3JzbyBhbCBUQVIgZW50cm8gNjAgZ2lvcm5pLjwvcD4KPGltZyBzcmM9Imh0dHA6Ly90cmFja2Vy
+LmV4YW1wbGUuY29tL3BpeGVsLmdpZiI+PC9ib2R5PjwvaHRtbD4=
+
+--===============2318332666790949533==--

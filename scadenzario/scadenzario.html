@@ -12,7 +12,7 @@
   Se si modifica lo script l'impronta va ricalcolata, altrimenti il browser lo blocca e la pagina non funziona.
   Tutto il codice è in questo file, senza librerie esterne.
 -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-MB3n33xx4MUIoHjGDxN3FWJVqiGI1L5QWrHa5+6l214='; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-QOLFXah38pO11RPOE4TgM4FNivQHOyC/LuApa1y2pbI='; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; form-action 'none'; base-uri 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="google" content="notranslate">
 <title>Scadenzario</title>
@@ -649,8 +649,8 @@ const Extract = (() => {
     const sm = [...before.matchAll(/[.!?;](?=\s+[A-ZÀ-Ú])/g)].pop(); if (sm && sm.index + 1 > bs) bs = sm.index + 1;
     let ae = after.length; const an = after.indexOf('\n'); if (an >= 0) ae = an;
     const am = /[.!?;](?=\s+[A-ZÀ-Ú]|\s*$)/.exec(after); if (am && am.index + 1 < ae) ae = am.index + 1;
-    // se la frase è spezzata a capo (testo a larghezza fissa) la allunga fino a 1 riga in più
-    if (ae === an && an >= 0 && an < 60) { const nx = after.indexOf('\n', an + 1); ae = nx > 0 ? nx : after.length; }
+    // se la frase è spezzata a capo (testo a larghezza fissa) la allunga di 1 riga, ma non se la riga finisce con la punteggiatura o la successiva è un elenco
+    if (ae === an && an >= 0 && an < 60 && !/[.!?;:]\s*$/.test(after.slice(0, an)) && !/^\s*[-•*–]/.test(after.slice(an + 1))) { const nx = after.indexOf('\n', an + 1); ae = nx > 0 ? nx : after.length; }
     return { text: text.slice(s + bs, end + ae).replace(/\s+/g, ' ').trim(), hlStart: start - (s + bs), hlEnd: end - (s + bs) };
   }
   function classify(ctx, subject) {
@@ -675,9 +675,11 @@ const Extract = (() => {
     let s = 0;
     if (c.kind !== 'abs') s += 4;
     else {
-      if (/(entro|non oltre|scadenz|scade|termin[ei]|fissat[aoie]|rinviat[aoie]|differit[aoie]|prorogat[aoie]|posticipat[aoie]|anticipat[aoie]|deadline|ultimo giorno|improrogabil|perentori|tassativ|previst[aoie] per|programmat[aoie] per|per il giorno|si terr[aà]|avr[aà] luogo|convocat[aoie]|indett[aoie]|fino al|appuntamento)/.test(pre.slice(-48))) s += 3;
+      if (/(entro|non oltre|scadenz|scade|termin[ei]|fissat[aoie]|rinviat[aoie]|differit[aoie]|prorogat[aoie]|posticipat[aoie]|anticipat[aoie]|deadline|ultimo giorno|improrogabil|perentori|tassativ|previst[aoie] per|programmat[aoie] per|per il giorno|si terr[aà]|avr[aà] luogo|convocat[aoie]|indett[aoie]|fino al|appuntamento)/.test(pre.slice(-48))
+        || /\bper (?:il|giorno)\s*$/.test(near)) s += 3;
       if (/(udienz|riunion|incontro|seduta|\bcall\b|videoconferenz|convocazion|tavolo|webinar|camera di consiglio|evento)/.test(pre.slice(-60))) s += 2;
-      if (/^[^.\n]{0,40}(si terr|avr[aà] luogo|riunion|udienz|incontro|scadenza|scade|è fissat|sono convocat|è convocat)/.test(post)) s += 2;
+      if (/^[^.\n]{0,40}(si terr|avr[aà] luogo|scadenza|scade|è fissat|sono convocat|è convocat|termine ultimo|ultimo giorno)/.test(post)) s += 3;
+      else if (/^[^.\n]{0,40}(riunion|udienz|incontro)/.test(post)) s += 2;
       const eventDel = /(udienz[ae]|riunion[ei]|sedut[ae]|incontr[oi]|camera di consiglio|convocazion[ei]|termine|scadenza|call)\s+(?:fissat[ao]\s+)?(?:del|per\s+il|per)\s*(?:giorno\s+)?$/.test(near);
       const isRef = /(?:\bdel|\bin data|\bdatat[ao]|\bpervenut[ao]|\bricevut[ao]|\binviat[ao]|\btrasmess[ao]|\bsottoscritt[ao]|\bfirmat[ao]|\bemess[ao]|\bdepositat[ao]|\bnotificat[ao]|\bpubblicat[ao]|\bsvolt[ao]si|\btenut[ao]si|\bprotocollat[ao]|\bdecorrenza)\s*(?:il\s+|in\s+data\s+|giorno\s+|data\s+)?$/.test(near);
       if (isRef && !eventDel) s -= 3;
@@ -686,7 +688,7 @@ const Extract = (() => {
       if (c.time) s += 1;
     }
     const ctx = c.ctx.text.toLowerCase();
-    if (/ammesso ricorso|può essere proposto ricorso|possibile (?:proporre|presentare) ricorso|ricorso straordinario al presidente/.test(ctx)) { s -= 3; c.warns.push('Sembra una formula di rito sui termini di impugnazione'); }
+    if (/ammesso ricorso|può essere proposto ricorso|possibile (?:proporre|presentare) ricorso|ricorso straordinario al presidente/.test(ctx)) { s -= 6; c.warns.push('Sembra una formula di rito sui termini di impugnazione'); }
     if (c.category !== 'scadenza') s += 1;
     const today = startOfDay(ref);
     if (c.date < today) { s -= 5; c.warns.push('Data già passata rispetto alla email'); }
