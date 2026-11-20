@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>Ciclo della Spesa</title>
+<link rel="stylesheet" href="app.css">
+<script src="app.js" defer></script>
+</head>
+<body>
+
+<div class="gate" id="scr-login" hidden>
+  <form id="f-login" autocomplete="on">
+    <h1>Ciclo della spesa</h1>
+    <p>Accedi con le credenziali assegnate dall'amministratore dell'applicazione.</p>
+    <div class="err" id="login-err" hidden></div>
+    <div class="fld"><label for="l-user">Nome utente</label><input id="l-user" name="username" autocomplete="username" required></div>
+    <div class="fld"><label for="l-pw">Password</label><input id="l-pw" name="password" type="password" autocomplete="current-password" required></div>
+    <button class="btn primary" type="submit">Accedi</button>
+  </form>
+</div>
+
+<div class="gate" id="scr-pwd" hidden>
+  <form id="f-pwd">
+    <h1>Imposta la tua password</h1>
+    <p id="pwd-intro">Al primo accesso, o dopo una reimpostazione, scegli una password personale di almeno 10 caratteri.</p>
+    <div class="err" id="pwd-err" hidden></div>
+    <div class="fld"><label for="p-old">Password attuale o provvisoria</label><input id="p-old" type="password" autocomplete="current-password" required></div>
+    <div class="fld"><label for="p-new">Nuova password</label><input id="p-new" type="password" autocomplete="new-password" minlength="10" required></div>
+    <div class="fld"><label for="p-new2">Ripeti la nuova password</label><input id="p-new2" type="password" autocomplete="new-password" minlength="10" required></div>
+    <div class="actions tight"><button class="btn primary" type="submit">Salva la password</button><button class="btn" type="button" id="pwd-cancel" hidden>Annulla</button></div>
+  </form>
+</div>
+
+<div id="scr-app" hidden>
+  <header class="top">
+    <div class="wrap top-row">
+      <div class="brand">
+        <h1>Ciclo della spesa</h1>
+        <small>Ordinazione · Liquidazione · Contabilizzazione · Pagamento</small>
+      </div>
+      <nav class="tabs" aria-label="Sezioni">
+        <a href="#cruscotto" data-view="cruscotto">Cruscotto</a>
+        <a href="#pratiche" data-view="pratiche">Pratiche</a>
+        <a href="#guida" data-view="guida">Guida</a>
+        <a href="#utenti" data-view="utenti" class="adm">Utenti e registro</a>
+      </nav>
+      <button class="btn primary w" id="btn-new" type="button">+ Nuova pratica</button>
+      <div class="account"><b id="acc-name"></b><span id="acc-role"></span>
+        <button class="btn sm ghost" id="btn-pwd" type="button">Cambia password</button>
+        <button class="btn sm" id="btn-logout" type="button">Esci</button></div>
+    </div>
+    <div id="banner" hidden></div>
+  </header>
+  <main class="wrap">
+    <section id="v-cruscotto"></section>
+    <section id="v-pratiche" hidden></section>
+    <section id="v-guida" hidden></section>
+    <section id="v-utenti" hidden></section>
+  </main>
+</div>
+
+<div class="scrim" id="scrim" hidden></div>
+<aside class="drawer" id="drawer" hidden aria-modal="true" role="dialog" aria-labelledby="dr-title"></aside>
+<div class="toast" id="toast" hidden role="status"></div>
+</body>
+</html>
