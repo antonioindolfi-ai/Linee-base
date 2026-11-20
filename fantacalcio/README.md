@@ -26,4 +26,6 @@ python3 fantacalcio/build.py
 2. Apri `https://<utente>.github.io/<repository>/fantacalcio/` con Chrome su Android.
 3. Tocca **Installa app** nella pagina, oppure il menu ⋮ → *Installa app* / *Aggiungi a schermata Home*.
 
+Dopo l'installazione l'app compare tra le opzioni di **Condividi** di Android per i file Excel e CSV: condividi il calendario esportato da Leghe Fantacalcio e il calcolo parte da solo (funzione Web Share Target di Chrome; serve l'app installata).
+
 Dopo la prima apertura l'app funziona anche senza connessione. Gli aggiornamenti arrivano da soli alla prima apertura con la rete.

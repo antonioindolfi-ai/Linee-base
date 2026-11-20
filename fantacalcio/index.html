@@ -1458,11 +1458,10 @@ function fallbackCopy(text, ok) {
 /* ---------- Eventi ---------- */
 $('run').addEventListener('click', run);
 $('sample').addEventListener('click', () => { clearLeague(); $('data').value = sampleText(); run(); });
-$('file').addEventListener('change', (e) => {
-  const f = e.target.files[0]; if (!f) return;
-  e.target.value = '';
+/* Legge un file Excel o di testo (dal pulsante o da "Condividi" di Android) */
+function loadFile(f) {
   const rd = new FileReader();
-  if (/\.xlsx?$/i.test(f.name)) {
+  if (/\.xlsx?$/i.test(f.name) || /spreadsheet|ms-excel/i.test(f.type)) {
     $('importinfo').className = 'status'; $('importinfo').textContent = `Lettura di ${f.name}…`;
     rd.onload = () => readWorkbook(rd.result).then(grid => {
       if (isLeagueGrid(grid)) { if (importLeague(grid)) run(); }
@@ -1473,7 +1472,28 @@ $('file').addEventListener('change', (e) => {
     rd.onload = () => { clearLeague(); $('data').value = String(rd.result); run(); };
     rd.readAsText(f);
   }
+}
+$('file').addEventListener('change', (e) => {
+  const f = e.target.files[0]; if (!f) return;
+  e.target.value = '';
+  loadFile(f);
 });
+
+/* File ricevuto da "Condividi": il service worker lo ha messo da parte e ha aperto ?condiviso */
+async function takeSharedFile() {
+  if (!/[?&]condiviso\b/.test(location.search) || !('caches' in window)) return false;
+  try { history.replaceState(null, '', location.pathname); } catch (e) {}
+  try {
+    const cache = await caches.open('fantacalendari-condivisi');
+    const res = await cache.match('file-condiviso');
+    if (!res) { $('importinfo').className = 'status err'; $('importinfo').textContent = 'Il file condiviso non è arrivato all\'app. Riprova, oppure usa "Carica Excel o CSV…".'; return false; }
+    const name = decodeURIComponent(res.headers.get('X-Nome-File') || 'condiviso.xlsx');
+    const blob = await res.blob();
+    await cache.delete('file-condiviso');
+    loadFile(new File([blob], name, { type: blob.type }));
+    return true;
+  } catch (e) { return false; }
+}
 $('summary').addEventListener('click', (e) => {
   if (e.target.closest('input')) return;
   const tr = e.target.closest('tr[data-t]'); if (!tr) return;
@@ -1525,7 +1545,8 @@ try {
 try { const sv = localStorage.getItem('fantacalendari-soglie'); if (sv) $('soglie').value = sv; } catch (e) {}
 $('soglie').addEventListener('input', saveRules);
 $('data').addEventListener('input', () => { try { localStorage.setItem('fantacalendari-dati', $('data').value); } catch (e) {} });
-run();
+if (/[?&]condiviso\b/.test(location.search)) takeSharedFile().then(ok => { if (!ok) run(); });
+else run();
 })();
 </script>
 
