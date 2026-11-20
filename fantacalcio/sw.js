@@ -1,5 +1,5 @@
 /* Generato da build.py: non modificare a mano. */
-const CACHE = 'fantacalendari-2513c91b1d4f';
+const CACHE = 'fantacalendari-afc5105636c3';
 const PRECACHE = ["./", "index.html", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png", "icons/icon-maskable-512.png", "icons/apple-touch-icon.png", "icons/favicon-48.png", "vendor/xlsx.full.min.js", "vendor/jspdf.umd.min.js"];
 const FONT_HOSTS = ['fonts.googleapis.com', 'fonts.gstatic.com'];
 

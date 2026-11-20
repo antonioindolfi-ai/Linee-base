@@ -797,7 +797,22 @@ function importLeague(grid) {
   if (lg.partial.length) msg.push(`Ignorate le giornate non complete: ${lg.partial.map(d => d.num + 'ª').join(', ')}.`);
   msg.push('I punti reali vengono dai risultati del file.');
   info.textContent = msg.join(' ');
+  try { localStorage.setItem('fantacalendari-lega', JSON.stringify({ lg, info: info.textContent, at: Date.now() })); } catch (e) {}
   return true;
+}
+
+function clearLeague() {
+  league = null; $('importinfo').textContent = '';
+  try { localStorage.removeItem('fantacalendari-lega'); } catch (e) {}
+}
+
+/* Punti reali inseriti a mano: ricordati per nome di squadra */
+function loadManualReal() { try { return JSON.parse(localStorage.getItem('fantacalendari-reali') || '{}'); } catch (e) { return {}; } }
+function saveManualReal() {
+  if (!state) return;
+  const map = loadManualReal();
+  state.names.forEach((n, t) => { if (state.real[t] == null) delete map[n]; else map[n] = state.real[t]; });
+  try { localStorage.setItem('fantacalendari-reali', JSON.stringify(map)); } catch (e) {}
 }
 
 let xlsxLoading = null;
@@ -835,8 +850,9 @@ function run() {
     const grid = raw.split(/\r?\n/).map(l => l.split(/\t|;/).map(c => c.trim() === '' ? null : c));
     if (!importLeague(grid)) return;
   } else if (league && raw !== leagueToText(league)) {
-    league = null; $('importinfo').textContent = '';
+    clearLeague();
   }
+  try { localStorage.setItem('fantacalendari-dati', $('data').value); } catch (e) {}
   let data, o;
   try { data = parseData($('data').value); o = readRules(); }
   catch (e) { status.className = 'status err'; status.textContent = e.message; return; }
@@ -910,7 +926,8 @@ function run() {
     status.textContent = `Fatto in ${fmt(secs, secs < 10 ? 2 : 1)} s.`;
     const prevReal = state && state.names.join('|') === data.names.join('|') ? state.real : null;
     const prevSel = state ? state.sel : 0;
-    let real = prevReal || new Array(data.names.length).fill(null);
+    let real = prevReal;
+    if (!real) { const mr = loadManualReal(); real = data.names.map(n => (n in mr ? mr[n] : null)); }
     if (league && league.names.join('|') === data.names.join('|')) {
       const rp = realPoints(league.names, league.played, o.pv, o.pn);
       real = data.names.map(n => rp[n]);
@@ -1440,7 +1457,7 @@ function fallbackCopy(text, ok) {
 
 /* ---------- Eventi ---------- */
 $('run').addEventListener('click', run);
-$('sample').addEventListener('click', () => { league = null; $('importinfo').textContent = ''; $('data').value = sampleText(); run(); });
+$('sample').addEventListener('click', () => { clearLeague(); $('data').value = sampleText(); run(); });
 $('file').addEventListener('change', (e) => {
   const f = e.target.files[0]; if (!f) return;
   e.target.value = '';
@@ -1449,11 +1466,11 @@ $('file').addEventListener('change', (e) => {
     $('importinfo').className = 'status'; $('importinfo').textContent = `Lettura di ${f.name}…`;
     rd.onload = () => readWorkbook(rd.result).then(grid => {
       if (isLeagueGrid(grid)) { if (importLeague(grid)) run(); }
-      else { league = null; $('importinfo').textContent = ''; $('data').value = gridToText(grid); run(); }
+      else { clearLeague(); $('data').value = gridToText(grid); run(); }
     }).catch(err => { $('importinfo').className = 'status err'; $('importinfo').textContent = 'Errore nella lettura del file: ' + err.message; });
     rd.readAsArrayBuffer(f);
   } else {
-    rd.onload = () => { league = null; $('importinfo').textContent = ''; $('data').value = String(rd.result); run(); };
+    rd.onload = () => { clearLeague(); $('data').value = String(rd.result); run(); };
     rd.readAsText(f);
   }
 });
@@ -1468,6 +1485,7 @@ $('summary').addEventListener('input', (e) => {
   const inp = e.target.closest('input.real'); if (!inp) return;
   const v = inp.value.trim();
   state.real[+inp.dataset.t] = v === '' || !isFinite(Number(v)) ? null : Math.round(Number(v));
+  if (!league) saveManualReal();
   updateRealCells();
 });
 $('teamsel').addEventListener('change', (e) => {
@@ -1496,6 +1514,14 @@ $('install').addEventListener('click', async () => {
 let draft = null;
 try { draft = localStorage.getItem('fantacalendari-dati'); } catch (e) {}
 $('data').value = draft || sampleText();
+/* Ultimo calendario della lega importato: ripristina punti reali e messaggio */
+try {
+  const saved = JSON.parse(localStorage.getItem('fantacalendari-lega') || 'null');
+  if (saved && saved.lg && leagueToText(saved.lg) === $('data').value) {
+    league = saved.lg;
+    $('importinfo').textContent = saved.info + ` (file importato il ${new Date(saved.at).toLocaleDateString('it-IT')}; per aggiornare carica il nuovo export).`;
+  }
+} catch (e) {}
 try { const sv = localStorage.getItem('fantacalendari-soglie'); if (sv) $('soglie').value = sv; } catch (e) {}
 $('soglie').addEventListener('input', saveRules);
 $('data').addEventListener('input', () => { try { localStorage.setItem('fantacalendari-dati', $('data').value); } catch (e) {} });
