@@ -1,15 +1,20 @@
 <!doctype html>
-<html lang="it">
+<html lang="it" translate="no" spellcheck="false">
 <head>
 <meta charset="utf-8">
 <!--
   Scadenzario offline.
-  La Content-Security-Policy qui sotto vieta al browser QUALSIASI connessione di rete
-  (connect-src 'none', default-src 'none'): nessun dato può lasciare questo computer.
+  La Content-Security-Policy qui sotto:
+  - vieta al browser qualsiasi connessione di rete (default-src 'none', connect-src 'none',
+    immagini solo incorporate "data:", form-action 'none'): nessun dato può lasciare questo computer;
+  - consente di eseguire SOLO lo script di questo file, riconosciuto dalla sua impronta SHA-256:
+    codice estraneo (per esempio contenuto in una email) non può essere eseguito.
+  Se si modifica lo script l'impronta va ricalcolata, altrimenti il browser lo blocca e la pagina non funziona.
   Tutto il codice è in questo file, senza librerie esterne.
 -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-MB3n33xx4MUIoHjGDxN3FWJVqiGI1L5QWrHa5+6l214='; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; form-action 'none'; base-uri 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="google" content="notranslate">
 <title>Scadenzario</title>
 <style>
 :root{
@@ -122,10 +127,10 @@ dialog textarea{min-height:90px}
       <details style="margin-top:12px">
         <summary>…oppure incolla il testo di una email</summary>
         <div class="row" style="margin:8px 0">
-          <label class="inline">Oggetto <input type="text" id="pSubject" size="40"></label>
+          <label class="inline">Oggetto <input type="text" id="pSubject" size="40" spellcheck="false" autocomplete="off" data-gramm="false" data-gramm_editor="false" data-enable-grammarly="false"></label>
           <label class="inline">Data della email <input type="date" id="pDate"></label>
         </div>
-        <textarea id="pText" placeholder="Incolla qui il testo della email…"></textarea>
+        <textarea id="pText" placeholder="Incolla qui il testo della email…" spellcheck="false" autocomplete="off" data-gramm="false" data-gramm_editor="false" data-enable-grammarly="false"></textarea>
         <div class="row" style="margin-top:8px"><button class="btn primary" id="pGo">Analizza testo</button></div>
       </details>
     </div>
@@ -171,7 +176,7 @@ dialog textarea{min-height:90px}
   <section id="elenco">
     <div class="panel">
       <div class="row" style="margin-bottom:10px">
-        <input type="search" id="fText" placeholder="Cerca…" size="28">
+        <input type="search" id="fText" placeholder="Cerca…" size="28" spellcheck="false" autocomplete="off" data-gramm="false" data-gramm_editor="false" data-enable-grammarly="false">
         <select id="fCat"><option value="">Tutte le categorie</option></select>
         <select id="fState">
           <option value="open">Da fare</option><option value="done">Completate</option><option value="">Tutte</option>
@@ -224,14 +229,14 @@ dialog textarea{min-height:90px}
 
 <dialog id="dlg">
   <h2 id="dlgTitle" style="margin-top:0;font-size:16px">Scadenza</h2>
-  <div class="f"><label for="eTitle">Titolo</label><input type="text" id="eTitle"></div>
+  <div class="f"><label for="eTitle">Titolo</label><input type="text" id="eTitle" spellcheck="false" autocomplete="off" data-gramm="false" data-gramm_editor="false" data-enable-grammarly="false"></div>
   <div class="row">
     <div class="f"><label for="eDate">Data</label><input type="date" id="eDate"></div>
     <div class="f"><label for="eTime">Ora (facoltativa)</label><input type="time" id="eTime"></div>
     <div class="f" style="flex:1"><label for="eCat">Categoria</label><select id="eCat"></select></div>
   </div>
   <div class="small" id="eWarn"></div>
-  <div class="f"><label for="eNotes">Note</label><textarea id="eNotes"></textarea></div>
+  <div class="f"><label for="eNotes">Note</label><textarea id="eNotes" spellcheck="false" autocomplete="off" data-gramm="false" data-gramm_editor="false" data-enable-grammarly="false"></textarea></div>
   <div class="small muted" id="eSrc" style="margin-bottom:10px"></div>
   <label class="inline"><input type="checkbox" id="eDone"> Completata</label>
   <div class="row" style="justify-content:flex-end;margin-top:12px">
@@ -261,6 +266,16 @@ const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 
 const fmtDate = d => d.toLocaleDateString('it-IT', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' });
 const fmtShort = d => d.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' });
 const WEEKDAYS = ['domenica', 'lunedì', 'martedì', 'mercoledì', 'giovedì', 'venerdì', 'sabato'];
+// attributi che impediscono a correttori e assistenti del browser di inviare il testo dei campi ai loro servizi online
+const NOASSIST = 'spellcheck="false" autocomplete="off" data-gramm="false" data-gramm_editor="false" data-enable-grammarly="false"';
+
+/* Blocchi applicati dal browser in base alla Content-Security-Policy: se qualcosa tentasse una
+   connessione o di eseguire codice estraneo, il browser lo impedisce e la pagina lo segnala. */
+const cspBlocked = [];
+document.addEventListener('securitypolicyviolation', ev => {
+  cspBlocked.push(`${ev.effectiveDirective || ev.violatedDirective} → ${ev.blockedURI || 'codice in linea'}`);
+  try { renderBanners(); } catch (e) { /* interfaccia non ancora pronta */ }
+});
 
 const CATS = [
   { id: 'udienza', label: 'Udienza', short: 'Udienza', color: '#c0392b',
@@ -288,14 +303,39 @@ const store = {
   settings: { reminders: [3, 1], patrono: '29/06', upcomingDays: 14, lastBackup: null },
 };
 let storageOk = true;
+/* Normalizza una scadenza letta dall'archivio o da un backup: tiene solo i campi previsti, con valori validi */
+function cleanEvent(e) {
+  if (!e || typeof e !== 'object') return null;
+  const str = (v, max) => typeof v === 'string' ? v.slice(0, max) : '';
+  const date = str(e.date, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || ymd(parseYmd(date)) !== date) return null;
+  const s = e.source && typeof e.source === 'object' ? e.source : null;
+  return {
+    id: typeof e.id === 'string' && /^[a-z0-9]{6,40}$/i.test(e.id) ? e.id : uid(),
+    title: str(e.title, 300).trim() || 'Scadenza', date,
+    time: typeof e.time === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(e.time) ? e.time : '',
+    category: catById(e.category).id, notes: str(e.notes, 5000), done: e.done === true,
+    created: Number.isFinite(e.created) ? e.created : Date.now(),
+    source: s ? { subject: str(s.subject, 500), from: str(s.from, 300), date: str(s.date, 40) || null, file: str(s.file, 300) } : null,
+  };
+}
+function cleanImported(o) {
+  const out = {};
+  if (o && typeof o === 'object') for (const [k, v] of Object.entries(o)) if (k !== '__proto__' && k.length <= 1000 && Number.isFinite(v)) out[k] = v;
+  return out;
+}
 function load() {
   try {
     const raw = localStorage.getItem(KEY);
     if (raw) {
       const d = JSON.parse(raw);
-      store.events = Array.isArray(d.events) ? d.events : [];
-      store.imported = d.imported || {};
-      Object.assign(store.settings, d.settings || {});
+      store.events = Array.isArray(d.events) ? d.events.map(cleanEvent).filter(Boolean) : [];
+      store.imported = cleanImported(d.imported);
+      const st = d.settings || {};
+      if (Array.isArray(st.reminders)) store.settings.reminders = st.reminders.filter(n => Number.isFinite(n) && n >= 0 && n < 366);
+      if (typeof st.patrono === 'string' && /^(\d{1,2}\/\d{1,2})?$/.test(st.patrono)) store.settings.patrono = st.patrono;
+      if (Number.isFinite(st.upcomingDays)) store.settings.upcomingDays = Math.max(1, Math.min(120, st.upcomingDays));
+      if (Number.isFinite(st.lastBackup)) store.settings.lastBackup = st.lastBackup;
     }
     localStorage.setItem(KEY + '.test', '1'); localStorage.removeItem(KEY + '.test');
   } catch (e) { storageOk = false; }
@@ -805,6 +845,7 @@ $$('nav button').forEach(b => b.onclick = () => switchTab(b.dataset.tab));
 
 function renderBanners() {
   const today = startOfDay(new Date()), out = [];
+  if (cspBlocked.length) out.push(`<div class="banner warn">Il browser ha bloccato ${cspBlocked.length === 1 ? 'un tentativo' : cspBlocked.length + ' tentativi'} di connessione o di esecuzione di codice estraneo: nessun dato è uscito. <span class="small">(${esc(cspBlocked.slice(-3).join('; '))})</span></div>`);
   if (!storageOk) out.push('<div class="banner danger">Questo browser non consente di salvare i dati (navigazione privata o criteri aziendali). Usa "Esporta backup" prima di chiudere la pagina.</div>');
   const open = store.events.filter(e => !e.done);
   const over = open.filter(e => parseYmd(e.date) < today).length;
@@ -877,10 +918,10 @@ function renderPending() {
       const hasDayW = c.warns.some(w => /^Cade /.test(w));
       return `<div class="cand ${c.conf === 'bassa' ? 'low' : ''}" data-p="${i}" data-c="${j}">
         <input type="checkbox" data-f="sel" ${c.sel ? 'checked' : ''} aria-label="Seleziona">
-        <input type="date" data-f="dateStr" value="${c.dateStr}">
-        <input type="time" data-f="time" value="${c.time}">
+        <input type="date" data-f="dateStr" value="${esc(c.dateStr)}">
+        <input type="time" data-f="time" value="${esc(c.time)}">
         <select data-f="category">${catOpts(c.category)}</select>
-        <input type="text" data-f="title" value="${esc(c.title)}">
+        <input type="text" data-f="title" value="${esc(c.title)}" ${NOASSIST}>
         <span class="badge b-${c.conf}" title="Punteggio ${c.score}">${c.conf}</span>
         <div class="ctx">«${ctx}»</div>
         ${c.warns.length ? `<div class="warns">${c.warns.map(w => `<span class="w">${esc(w)}</span>`).join('')}
@@ -941,7 +982,7 @@ function renderCalendar() {
     const k = ymd(d), evs = idx.get(k) || [], h = holidayName(d);
     const cls = ['day', d.getMonth() !== first.getMonth() && 'out', (d.getDay() === 0 || d.getDay() === 6) && 'we', h && 'hol', k === today && 'today'].filter(Boolean).join(' ');
     html += `<div class="${cls}" data-date="${k}"><span class="n">${d.getDate()}</span>${h ? `<span class="hn">${esc(h)}</span>` : ''}
-      ${evs.slice(0, 4).map(e => `<span class="chip${e.done ? ' done' : ''}" data-id="${e.id}" style="background:${catById(e.category).color}" title="${esc(e.title)}">${e.time ? e.time + ' ' : ''}${esc(e.title)}</span>`).join('')}
+      ${evs.slice(0, 4).map(e => `<span class="chip${e.done ? ' done' : ''}" data-id="${esc(e.id)}" style="background:${catById(e.category).color}" title="${esc(e.title)}">${e.time ? esc(e.time) + ' ' : ''}${esc(e.title)}</span>`).join('')}
       ${evs.length > 4 ? `<span class="small muted">+${evs.length - 4} altre</span>` : ''}</div>`;
   }
   $('#grid').innerHTML = html;
@@ -955,8 +996,8 @@ function renderUpcoming() {
   $('#upcoming').innerHTML = list.length ? list.map(e => {
     const d = parseYmd(e.date), diff = Math.round((d - today) / 864e5);
     const when = diff < 0 ? `scaduta da ${-diff} gg` : diff === 0 ? 'oggi' : diff === 1 ? 'domani' : `tra ${diff} giorni`;
-    return `<div class="up-item${diff < 0 ? ' over' : ''}" data-id="${e.id}" style="border-left-color:${catById(e.category).color}">
-      <div class="t">${esc(e.title)}</div><div class="small muted">${esc(fmtDate(d))}${e.time ? ' · ' + e.time : ''} · <b>${when}</b></div></div>`;
+    return `<div class="up-item${diff < 0 ? ' over' : ''}" data-id="${esc(e.id)}" style="border-left-color:${catById(e.category).color}">
+      <div class="t">${esc(e.title)}</div><div class="small muted">${esc(fmtDate(d))}${e.time ? ' · ' + esc(e.time) : ''} · <b>${when}</b></div></div>`;
   }).join('') : '<p class="muted">Nessuna scadenza aperta in questo periodo.</p>';
 }
 $('#prevM').onclick = () => { state.month = new Date(state.month.getFullYear(), state.month.getMonth() - 1, 1); renderCalendar(); };
@@ -1003,7 +1044,7 @@ function filtered() {
 }
 function renderList() {
   const today = ymd(new Date()), rows = filtered();
-  $('#list').innerHTML = rows.length ? rows.map(e => `<tr class="${e.done ? 'done' : ''}" data-id="${e.id}">
+  $('#list').innerHTML = rows.length ? rows.map(e => `<tr class="${e.done ? 'done' : ''}" data-id="${esc(e.id)}">
     <td><input type="checkbox" data-act="done" ${e.done ? 'checked' : ''} title="Completata"></td>
     <td style="white-space:nowrap;${!e.done && e.date < today ? 'color:var(--danger);font-weight:600' : ''}">${esc(fmtDate(parseYmd(e.date)))}</td>
     <td>${esc(e.time || '')}</td><td>${esc(e.title)}</td>
@@ -1044,8 +1085,8 @@ $('#bkFile').onchange = async () => {
   try {
     const d = JSON.parse(await f.text()); if (!Array.isArray(d.events)) throw new Error('formato');
     let n = 0; const ids = new Set(store.events.map(e => e.id));
-    for (const e of d.events) if (e && e.id && e.date && !ids.has(e.id)) { store.events.push(e); n++; }
-    Object.assign(store.imported, d.imported || {});
+    for (const raw of d.events) { const e = cleanEvent(raw); if (e && !ids.has(e.id)) { store.events.push(e); ids.add(e.id); n++; } }
+    Object.assign(store.imported, cleanImported(d.imported));
     save(); renderSettings(); renderBanners(); toast(`Importate ${n} scadenze (quelle già presenti sono state ignorate)`);
   } catch (e) { toast('File di backup non valido'); }
 };
@@ -1060,7 +1101,7 @@ $('#wipe').onclick = () => {
 
 /* ---------- Avvio ---------- */
 load(); renderBanners();
-window.Scadenzario = { Extract, Mime, Msg, buildIcs, store }; // per verifiche dalla console
+window.Scadenzario = { Extract, Mime, Msg, buildIcs, store, cspBlocked }; // per verifiche dalla console
 </script>
 </body>
 </html>
