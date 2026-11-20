@@ -1,3 +1,24 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Rigioca il fantacampionato a scontri diretti con tutti i calendari possibili.">
+<meta name="theme-color" content="#1d6b45" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f1612" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Fantacalendari">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/favicon-48.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<style>
+:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;font:14px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+img{max-width:100%}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
 <title>Fantacalendari</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -132,7 +153,10 @@ code { font-family: var(--font-mono); font-size: .92em; }
 <div class="wrap">
   <header>
     <span class="eyebrow">Fantacalcio · scontri diretti</span>
-    <h1>Fantacalendari</h1>
+    <div class="row" style="justify-content: space-between;">
+      <h1>Fantacalendari</h1>
+      <button type="button" id="install" class="primary" hidden>Installa app</button>
+    </div>
     <p class="lead">Incolla i fantapunti di ogni squadra giornata per giornata: lo strumento rigioca il campionato con tutti i calendari possibili e mostra quanti punti e quale posizione avrebbe ottenuto ogni squadra, e quanto il calendario reale l'ha aiutata o penalizzata.</p>
   </header>
 
@@ -145,7 +169,7 @@ code { font-family: var(--font-mono); font-size: .92em; }
         <span class="hint">Separatori accettati: tabulazione (copia-incolla da Excel), punto e virgola, virgola. Con tabulazione o punto e virgola i decimali possono avere la virgola (72,5). La prima riga può essere un'intestazione.</span>
       </div>
       <div class="row">
-        <span class="filebtn"><button type="button" tabindex="-1">Carica Excel o CSV…</button><input id="file" type="file" accept=".xlsx,.xls,.csv,.txt,.tsv" aria-label="Carica file Excel o CSV"></span>
+        <span class="filebtn"><button type="button" tabindex="-1">Carica Excel o CSV…</button><input id="file" type="file" accept=".xlsx,.xls,.csv,.txt,.tsv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv,text/plain,text/tab-separated-values" aria-label="Carica file Excel o CSV"></span>
         <button type="button" id="sample">Dati di esempio</button>
       </div>
       <p class="hint">Puoi caricare direttamente il calendario esportato da Leghe Fantacalcio (.xlsx): vengono lette le giornate già giocate, ricavate le fasce gol della lega e calcolata la classifica reale.</p>
@@ -781,7 +805,7 @@ function loadXLSX() {
   if (window.XLSX) return Promise.resolve(window.XLSX);
   if (!xlsxLoading) xlsxLoading = new Promise((ok, ko) => {
     const sc = document.createElement('script');
-    sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    sc.src = 'vendor/xlsx.full.min.js';
     sc.onload = () => ok(window.XLSX);
     sc.onerror = () => { xlsxLoading = null; ko(new Error('Impossibile caricare il lettore di file Excel.')); };
     document.head.appendChild(sc);
@@ -1134,7 +1158,7 @@ function loadScript(src, ready) {
     document.head.appendChild(sc);
   });
 }
-const loadJsPDF = () => loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js', () => window.jspdf && window.jspdf.jsPDF);
+const loadJsPDF = () => loadScript('vendor/jspdf.umd.min.js', () => window.jspdf && window.jspdf.jsPDF);
 
 function exportMsg(text, err) { const el = $('exportinfo'); el.className = 'status' + (err ? ' err' : ''); el.textContent = text; }
 
@@ -1455,6 +1479,20 @@ $('copy').addEventListener('click', copyTable);
 $('xlsx').addEventListener('click', exportExcel);
 $('pdf').addEventListener('click', exportPDF);
 
+/* Telefoni: campione più piccolo per tempi brevi (errore massimo circa ±0,1 punti %) */
+try { if (matchMedia('(pointer: coarse)').matches && $('samples').value === '2000000') $('samples').value = '1000000'; } catch (e) {}
+
+/* Installazione come app (solo dove il browser la offre, es. Chrome su Android dal sito pubblicato) */
+let installPrompt = null;
+window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installPrompt = e; $('install').hidden = false; });
+window.addEventListener('appinstalled', () => { installPrompt = null; $('install').hidden = true; });
+$('install').addEventListener('click', async () => {
+  if (!installPrompt) return;
+  installPrompt.prompt();
+  try { await installPrompt.userChoice; } catch (e) {}
+  installPrompt = null; $('install').hidden = true;
+});
+
 let draft = null;
 try { draft = localStorage.getItem('fantacalendari-dati'); } catch (e) {}
 $('data').value = draft || sampleText();
@@ -1464,3 +1502,11 @@ $('data').addEventListener('input', () => { try { localStorage.setItem('fantacal
 run();
 })();
 </script>
+
+<script>
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+  window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
+}
+</script>
+</body>
+</html>
