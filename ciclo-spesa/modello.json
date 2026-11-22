@@ -1,0 +1,573 @@
+{
+ "FASI": [
+  {
+   "n": "Ordinazione",
+   "d": "Si decide la spesa e si assume l'obbligazione: atto che la autorizza, verifica della copertura sul capitolo e registrazione dell'impegno. Per i contratti pubblici comprende l'acquisizione del CIG e l'ordine al fornitore."
+  },
+  {
+   "n": "Liquidazione",
+   "d": "Si accerta il diritto del creditore: prestazione eseguita e conforme, documento di spesa regolare, importo esatto e beneficiario individuato. Si conclude con l'atto di liquidazione."
+  },
+  {
+   "n": "Contabilizzazione",
+   "d": "La spesa liquidata è registrata nel sistema contabile e sulla Piattaforma dei crediti commerciali (PCC); si emette il titolo di pagamento, che passa al controllo dell'Ufficio centrale di bilancio."
+  },
+  {
+   "n": "Pagamento",
+   "d": "Dopo il controllo il titolo è eseguito dalla tesoreria con accredito al beneficiario. Si registrano data ed estremi della quietanza, si chiudono le comunicazioni e il fascicolo."
+  }
+ ],
+ "TIPI": {
+  "beni": {
+   "n": "Beni e servizi",
+   "s": "Forniture e servizi con fattura elettronica",
+   "check": [
+    [
+     {
+      "id": "b_det",
+      "t": "Determina o decisione a contrarre adottata",
+      "r": 1,
+      "ref": "art. 17 D.Lgs. 36/2023"
+     },
+     {
+      "id": "b_cig",
+      "t": "CIG acquisito",
+      "r": 1,
+      "ref": "tracciabilità, art. 3 L. 136/2010"
+     },
+     {
+      "id": "b_cup",
+      "t": "CUP acquisito, se la spesa rientra in un progetto di investimento pubblico",
+      "r": 0
+     },
+     {
+      "id": "b_cop",
+      "t": "Copertura verificata sul capitolo / piano gestionale",
+      "r": 1
+     },
+     {
+      "id": "b_imp",
+      "t": "Impegno di spesa registrato nel sistema contabile",
+      "r": 1,
+      "ref": "art. 34 L. 196/2009"
+     },
+     {
+      "id": "b_ord",
+      "t": "Ordine o contratto trasmesso al fornitore (MePA o altro canale)",
+      "r": 1
+     },
+     {
+      "id": "b_ccd",
+      "t": "Dichiarazione del conto corrente dedicato acquisita",
+      "r": 0,
+      "ref": "art. 3 L. 136/2010"
+     }
+    ],
+    [
+     {
+      "id": "b_fat",
+      "t": "Fattura elettronica ricevuta tramite SdI (data di ricezione registrata nei dati)",
+      "r": 1
+     },
+     {
+      "id": "b_acc",
+      "t": "Fattura accettata, oppure rifiutata con motivazione, entro 15 giorni",
+      "r": 0,
+      "ref": "rifiuto solo nei casi del DM MEF 132/2020"
+     },
+     {
+      "id": "b_ctr",
+      "t": "Controllati in fattura CIG, CUP e codice univoco ufficio",
+      "r": 1,
+      "ref": "art. 25 DL 66/2014"
+     },
+     {
+      "id": "b_reg",
+      "t": "Verifica di conformità / attestazione di regolare esecuzione",
+      "r": 1
+     },
+     {
+      "id": "b_durc",
+      "t": "DURC regolare e in corso di validità",
+      "r": 1
+     },
+     {
+      "id": "b_48b",
+      "t": "Verifica inadempimenti presso Agenzia Entrate-Riscossione (pagamenti oltre 5.000 €)",
+      "r": 0,
+      "ref": "art. 48-bis DPR 602/1973"
+     },
+     {
+      "id": "b_liq",
+      "t": "Atto di liquidazione firmato",
+      "r": 1
+     }
+    ],
+    [
+     {
+      "id": "b_pcc",
+      "t": "Fattura contabilizzata su PCC / sistema contabile (liquidata, sospesa o non liquidabile)",
+      "r": 1
+     },
+     {
+      "id": "b_spl",
+      "t": "Scissione dei pagamenti IVA applicata",
+      "r": 1,
+      "ref": "art. 17-ter DPR 633/1972"
+     },
+     {
+      "id": "b_op",
+      "t": "Ordine di pagamento / titolo di spesa emesso (estremi nei dati)",
+      "r": 1
+     },
+     {
+      "id": "b_ucb",
+      "t": "Titolo all'Ufficio centrale di bilancio per il controllo",
+      "r": 1,
+      "ref": "D.Lgs. 123/2011"
+     }
+    ],
+    [
+     {
+      "id": "b_vis",
+      "t": "Esito positivo del controllo",
+      "r": 1
+     },
+     {
+      "id": "b_pag",
+      "t": "Pagamento eseguito (data e quietanza nei dati)",
+      "r": 1
+     },
+     {
+      "id": "b_pccp",
+      "t": "Pagamento risultante su PCC",
+      "r": 0
+     },
+     {
+      "id": "b_arc",
+      "t": "Fascicolo completato e archiviato; adempimenti di trasparenza verificati",
+      "r": 1
+     }
+    ]
+   ]
+  },
+  "legali": {
+   "n": "Spese legali",
+   "s": "Spese di lite e onorari da titolo giudiziale",
+   "check": [
+    [
+     {
+      "id": "l_tit",
+      "t": "Titolo acquisito (sentenza, ordinanza, decreto) e verificata la sua esecutività",
+      "r": 1
+     },
+     {
+      "id": "l_avv",
+      "t": "Indicazioni dell'Avvocatura dello Stato acquisite, ove necessarie",
+      "r": 0
+     },
+     {
+      "id": "l_qnt",
+      "t": "Importo quantificato: spese, compensi, accessori (spese generali, CPA, IVA) ed eventuali interessi",
+      "r": 1,
+      "ref": "DM 55/2014"
+     },
+     {
+      "id": "l_cap",
+      "t": "Capitolo individuato e disponibilità verificata",
+      "r": 1
+     },
+     {
+      "id": "l_ben",
+      "t": "Beneficiario individuato (parte o difensore distrattario) con dati anagrafici e bancari",
+      "r": 1,
+      "ref": "art. 93 c.p.c."
+     }
+    ],
+    [
+     {
+      "id": "l_doc",
+      "t": "Documentazione di spesa acquisita (nota spese, fattura del difensore distrattario)",
+      "r": 1
+     },
+     {
+      "id": "l_48b",
+      "t": "Verifica inadempimenti presso Agenzia Entrate-Riscossione (pagamenti oltre 5.000 €)",
+      "r": 0,
+      "ref": "art. 48-bis DPR 602/1973"
+     },
+     {
+      "id": "l_att",
+      "t": "Atto di liquidazione predisposto",
+      "r": 1
+     },
+     {
+      "id": "l_tra",
+      "t": "Atti trasmessi alla DG del personale, del bilancio, dei servizi strumentali e della comunicazione",
+      "r": 1
+     }
+    ],
+    [
+     {
+      "id": "l_imp",
+      "t": "Impegno e ordine di pagamento emessi dalla DG competente (estremi nei dati)",
+      "r": 1
+     },
+     {
+      "id": "l_rit",
+      "t": "Ritenuta d'acconto applicata, ove dovuta",
+      "r": 0
+     }
+    ],
+    [
+     {
+      "id": "l_pag",
+      "t": "Pagamento eseguito (data e quietanza nei dati)",
+      "r": 1
+     },
+     {
+      "id": "l_com",
+      "t": "Pagamento comunicato all'Avvocatura dello Stato e alla controparte",
+      "r": 1
+     },
+     {
+      "id": "l_fas",
+      "t": "Fascicolo del contenzioso aggiornato",
+      "r": 1
+     }
+    ]
+   ]
+  },
+  "compensi": {
+   "n": "Compensi organi",
+   "s": "Compensi e indennità di organi ordinari e straordinari",
+   "check": [
+    [
+     {
+      "id": "c_nom",
+      "t": "Atto di nomina e determinazione del compenso acquisiti",
+      "r": 1
+     },
+     {
+      "id": "c_per",
+      "t": "Periodo di riferimento e importo spettante determinati",
+      "r": 1
+     },
+     {
+      "id": "c_imp",
+      "t": "Impegno di spesa registrato sul capitolo",
+      "r": 1
+     }
+    ],
+    [
+     {
+      "id": "c_dic",
+      "t": "Dichiarazioni del percettore acquisite (posizione fiscale e previdenziale, dati bancari, fattura se titolare di partita IVA)",
+      "r": 1
+     },
+     {
+      "id": "c_att",
+      "t": "Attestazione dell'attività svolta / delle presenze",
+      "r": 1
+     },
+     {
+      "id": "c_rit",
+      "t": "Ritenute calcolate",
+      "r": 1
+     },
+     {
+      "id": "c_tet",
+      "t": "Verificati limiti e cumuli, ove applicabili",
+      "r": 0,
+      "ref": "art. 23-ter DL 201/2011"
+     },
+     {
+      "id": "c_liq",
+      "t": "Atto di liquidazione firmato",
+      "r": 1
+     }
+    ],
+    [
+     {
+      "id": "c_op",
+      "t": "Ordine di pagamento emesso (estremi nei dati)",
+      "r": 1
+     },
+     {
+      "id": "c_ucb",
+      "t": "Titolo all'Ufficio centrale di bilancio per il controllo",
+      "r": 1
+     }
+    ],
+    [
+     {
+      "id": "c_pag",
+      "t": "Pagamento eseguito (data e quietanza nei dati)",
+      "r": 1
+     },
+     {
+      "id": "c_cu",
+      "t": "Annotati gli adempimenti del sostituto d'imposta (Certificazione Unica)",
+      "r": 0
+     }
+    ]
+   ]
+  },
+  "altro": {
+   "n": "Altra spesa",
+   "s": "Spese che non rientrano nelle altre tipologie",
+   "check": [
+    [
+     {
+      "id": "a_att",
+      "t": "Atto che autorizza la spesa adottato",
+      "r": 1
+     },
+     {
+      "id": "a_cop",
+      "t": "Copertura verificata e impegno registrato",
+      "r": 1
+     }
+    ],
+    [
+     {
+      "id": "a_doc",
+      "t": "Documentazione giustificativa acquisita e verificata",
+      "r": 1
+     },
+     {
+      "id": "a_liq",
+      "t": "Atto di liquidazione firmato",
+      "r": 1
+     }
+    ],
+    [
+     {
+      "id": "a_reg",
+      "t": "Spesa registrata nel sistema contabile",
+      "r": 1
+     },
+     {
+      "id": "a_op",
+      "t": "Ordine di pagamento emesso",
+      "r": 1
+     }
+    ],
+    [
+     {
+      "id": "a_pag",
+      "t": "Pagamento eseguito (data e quietanza nei dati)",
+      "r": 1
+     },
+     {
+      "id": "a_arc",
+      "t": "Fascicolo archiviato",
+      "r": 1
+     }
+    ]
+   ]
+  }
+ },
+ "ORDINE_TIPI": [
+  "beni",
+  "legali",
+  "compensi",
+  "altro"
+ ],
+ "CAMPI": [
+  {
+   "sub": "Pratica"
+  },
+  {
+   "k": "oggetto",
+   "l": "Oggetto",
+   "t": "text",
+   "full": 1
+  },
+  {
+   "k": "beneficiario",
+   "l": "Beneficiario",
+   "t": "text"
+  },
+  {
+   "k": "cfpiva",
+   "l": "C.F. / Partita IVA",
+   "t": "text"
+  },
+  {
+   "k": "importo",
+   "l": "Importo totale (€)",
+   "t": "num"
+  },
+  {
+   "k": "iva",
+   "l": "di cui IVA (€)",
+   "t": "num",
+   "tipi": [
+    "beni",
+    "legali"
+   ]
+  },
+  {
+   "k": "istituzione",
+   "l": "Istituzione / organo",
+   "t": "text",
+   "tipi": [
+    "compensi"
+   ]
+  },
+  {
+   "k": "periodo",
+   "l": "Periodo di riferimento",
+   "t": "text",
+   "tipi": [
+    "compensi"
+   ]
+  },
+  {
+   "k": "titolo",
+   "l": "Titolo (provvedimento, autorità, n.)",
+   "t": "text",
+   "tipi": [
+    "legali"
+   ],
+   "full": 1
+  },
+  {
+   "k": "rg",
+   "l": "N. R.G.",
+   "t": "text",
+   "tipi": [
+    "legali"
+   ]
+  },
+  {
+   "k": "dataNotifica",
+   "l": "Notifica del titolo esecutivo",
+   "t": "date",
+   "tipi": [
+    "legali"
+   ],
+   "h": "Avvia il termine di 120 giorni"
+  },
+  {
+   "sub": "Bilancio"
+  },
+  {
+   "k": "esercizio",
+   "l": "Esercizio",
+   "t": "text"
+  },
+  {
+   "k": "capitolo",
+   "l": "Capitolo / piano gestionale",
+   "t": "text"
+  },
+  {
+   "k": "impegno",
+   "l": "N. impegno",
+   "t": "text"
+  },
+  {
+   "k": "cig",
+   "l": "CIG",
+   "t": "text",
+   "tipi": [
+    "beni"
+   ]
+  },
+  {
+   "k": "cup",
+   "l": "CUP",
+   "t": "text",
+   "tipi": [
+    "beni"
+   ]
+  },
+  {
+   "sub": "Documento di spesa",
+   "tipi": [
+    "beni",
+    "legali",
+    "compensi"
+   ]
+  },
+  {
+   "k": "fattura",
+   "l": "N. fattura / documento",
+   "t": "text",
+   "tipi": [
+    "beni",
+    "legali",
+    "compensi"
+   ]
+  },
+  {
+   "k": "dataFattura",
+   "l": "Data documento",
+   "t": "date",
+   "tipi": [
+    "beni",
+    "legali",
+    "compensi"
+   ]
+  },
+  {
+   "k": "dataRicezione",
+   "l": "Ricezione fattura su SdI",
+   "t": "date",
+   "tipi": [
+    "beni"
+   ],
+   "h": "Avvia i termini di 15 e 30 giorni"
+  },
+  {
+   "k": "dataConformita",
+   "l": "Verifica di conformità conclusa il",
+   "t": "date",
+   "tipi": [
+    "beni"
+   ],
+   "h": "Se successiva alla ricezione, il termine decorre da qui"
+  },
+  {
+   "k": "termine60",
+   "l": "Termine di pagamento di 60 giorni pattuito nel contratto",
+   "t": "check",
+   "tipi": [
+    "beni"
+   ],
+   "full": 1
+  },
+  {
+   "sub": "Pagamento"
+  },
+  {
+   "k": "op",
+   "l": "N. ordine di pagamento / titolo",
+   "t": "text"
+  },
+  {
+   "k": "dataPagamento",
+   "l": "Data pagamento",
+   "t": "date"
+  },
+  {
+   "k": "quietanza",
+   "l": "Estremi quietanza",
+   "t": "text"
+  },
+  {
+   "k": "scadenzaManuale",
+   "l": "Scadenza indicata a mano",
+   "t": "date",
+   "h": "Prevale su quella calcolata"
+  },
+  {
+   "k": "note",
+   "l": "Note",
+   "t": "area",
+   "full": 1
+  }
+ ]
+}
