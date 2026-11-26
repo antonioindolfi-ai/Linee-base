@@ -357,6 +357,102 @@
       }
      }
     ]
+   ],
+   "intro": [
+    {
+     "come": "La fase parte dal fabbisogno e si chiude quando il fornitore ha ricevuto l'ordine o il contratto è stipulato. In mezzo si sceglie lo strumento di acquisto, si adotta la determina, si acquisiscono i codici (CIG ed eventuale CUP) e si registra l'impegno, che passa al controllo dell'Ufficio centrale di bilancio.",
+     "chi": [
+      "Ufficio che ha il fabbisogno: descrive cosa serve",
+      "RUP: istruisce l'affidamento",
+      "Dirigente: firma determina e impegno",
+      "Ufficio centrale di bilancio: controlla la regolarità amministrativa e contabile",
+      "Fornitore: riceve l'ordine e comunica il conto dedicato"
+     ],
+     "entrata": [
+      "Richiesta dell'ufficio",
+      "Preventivo od offerta, sul MePA o fuori",
+      "Disponibilità sul capitolo"
+     ],
+     "uscita": [
+      "Determina a contrarre",
+      "CIG ed eventuale CUP",
+      "Decreto di impegno",
+      "Ordine o contratto stipulato",
+      "Dichiarazione del conto dedicato"
+     ],
+     "tempi": [
+      "Gli acquisti di beni e servizi di importo pari o superiore a 140.000 € devono essere nel programma triennale (art. 37 D.Lgs. 36/2023).",
+      "Il fornitore comunica il conto dedicato entro 7 giorni dall'accensione o dal primo utilizzo per commesse pubbliche."
+     ]
+    },
+    {
+     "come": "Comincia quando la prestazione è eseguita e la fattura arriva su SdI. Entro 15 giorni si decide se accettarla, si controllano i codici, si attesta la regolare esecuzione, si verificano il DURC e, sopra i 5.000 €, la posizione presso Agenzia delle Entrate-Riscossione. Si chiude con l'atto di liquidazione.",
+     "chi": [
+      "Fornitore: emette la fattura elettronica",
+      "RUP o direttore dell'esecuzione: verifica la conformità",
+      "Ufficio: controlla fattura, DURC e posizione presso Agenzia delle Entrate-Riscossione",
+      "Dirigente: firma l'atto di liquidazione"
+     ],
+     "entrata": [
+      "Fattura elettronica da SdI",
+      "Ordine o contratto con CIG e CUP",
+      "Documenti di consegna o di esecuzione"
+     ],
+     "uscita": [
+      "Esito della fattura: accettata o rifiutata",
+      "Certificato di verifica di conformità o attestazione di regolare esecuzione",
+      "DURC regolare",
+      "Esito della verifica presso Agenzia delle Entrate-Riscossione",
+      "Atto di liquidazione"
+     ],
+     "tempi": [
+      "15 giorni dalla ricezione su SdI per accettare o rifiutare la fattura.",
+      "Verifica di conformità entro 30 giorni dalla consegna, salvo diverso accordo espresso.",
+      "Il termine di pagamento di 30 giorni (60 se pattuito) sta già correndo: la liquidazione non lo sospende.",
+      "Il DURC vale 120 giorni."
+     ]
+    },
+    {
+     "come": "La spesa liquidata entra in contabilità: si aggiorna lo stato della fattura sulla Piattaforma dei crediti commerciali, si separa l'IVA da versare in scissione dei pagamenti e si emette il titolo di pagamento, che va al controllo dell'Ufficio centrale di bilancio.",
+     "chi": [
+      "Ufficio: aggiorna la PCC ed emette il titolo",
+      "Dirigente: firma il titolo",
+      "Ufficio centrale di bilancio: controlla la regolarità amministrativa e contabile"
+     ],
+     "entrata": [
+      "Atto di liquidazione",
+      "Fattura accettata",
+      "Impegno"
+     ],
+     "uscita": [
+      "Fattura liquidata sulla PCC",
+      "Titolo di pagamento con la quota IVA in scissione",
+      "Titolo trasmesso al controllo"
+     ],
+     "tempi": [
+      "Emetti il titolo con margine rispetto alla scadenza della fattura, considerando i tempi del controllo."
+     ]
+    },
+    {
+     "come": "Superato il controllo, la tesoreria esegue il bonifico. Si verifica l'esito, si registrano data e quietanza, si controlla che la PCC risulti aggiornata e si chiude il fascicolo con le verifiche di trasparenza.",
+     "chi": [
+      "Ufficio centrale di bilancio: comunica l'esito del controllo",
+      "Tesoreria dello Stato presso la Banca d'Italia: esegue il bonifico",
+      "Ufficio: verifica, registra e archivia"
+     ],
+     "entrata": [
+      "Titolo con esito positivo",
+      "Dati del conto dedicato"
+     ],
+     "uscita": [
+      "Quietanza",
+      "Fattura pagata sulla PCC",
+      "Fascicolo completo"
+     ],
+     "tempi": [
+      "Dopo la scadenza decorrono automaticamente gli interessi moratori (art. 4 D.Lgs. 231/2002) e peggiora l'indicatore di tempestività dei pagamenti."
+     ]
+    }
    ]
   },
   "legali": {
@@ -567,6 +663,86 @@
       }
      }
     ]
+   ],
+   "intro": [
+    {
+     "come": "Per le spese legali la spesa non nasce da un acquisto ma da un provvedimento del giudice. Si acquisisce il titolo, se ne verifica l'esecutività, si sentono le indicazioni dell'Avvocatura, si calcola l'importo esatto e si individuano beneficiario e capitolo.",
+     "chi": [
+      "Avvocatura dello Stato: trasmette il provvedimento e dà indicazioni",
+      "Ufficio I: istruisce e quantifica",
+      "Direzione generale del personale, del bilancio, dei servizi strumentali e della comunicazione: gestisce il capitolo",
+      "Controparte o suo difensore: fornisce i dati per il pagamento"
+     ],
+     "entrata": [
+      "Provvedimento del giudice e relata di notifica",
+      "Indicazioni dell'Avvocatura"
+     ],
+     "uscita": [
+      "Prospetto di quantificazione",
+      "Dati del beneficiario",
+      "Capitolo individuato"
+     ],
+     "tempi": [
+      "120 giorni dalla notifica del titolo esecutivo: dopo, il creditore può avviare l'esecuzione forzata (art. 14 DL 669/1996), con ulteriori spese per l'amministrazione."
+     ]
+    },
+    {
+     "come": "Si acquisiscono i documenti fiscali del beneficiario, si fa la verifica presso Agenzia delle Entrate-Riscossione se l'importo supera 5.000 €, si predispone l'atto di liquidazione e lo si trasmette alla Direzione che dispone il pagamento.",
+     "chi": [
+      "Difensore o parte vittoriosa: invia fattura o nota spese",
+      "Ufficio I: predispone e trasmette l'atto",
+      "Dirigente: firma l'atto"
+     ],
+     "entrata": [
+      "Prospetto di quantificazione",
+      "Fattura o nota spese",
+      "Dati bancari del beneficiario"
+     ],
+     "uscita": [
+      "Esito della verifica presso Agenzia delle Entrate-Riscossione",
+      "Atto di liquidazione",
+      "Nota di trasmissione protocollata"
+     ],
+     "tempi": [
+      "Il termine dei 120 giorni continua a decorrere: trasmetti gli atti con margine sufficiente per impegno, titolo e controllo."
+     ]
+    },
+    {
+     "come": "Questa fase si svolge presso la Direzione che gestisce il capitolo: assume l'impegno ed emette l'ordine di pagamento, applicando l'eventuale ritenuta d'acconto. L'Ufficio I segue l'avanzamento e registra gli estremi.",
+     "chi": [
+      "Direzione generale del personale, del bilancio, dei servizi strumentali e della comunicazione: impegno e ordine di pagamento",
+      "Ufficio centrale di bilancio: controlla la regolarità amministrativa e contabile",
+      "Ufficio I: segue e registra"
+     ],
+     "entrata": [
+      "Atto di liquidazione trasmesso"
+     ],
+     "uscita": [
+      "Impegno",
+      "Ordine di pagamento con eventuale ritenuta"
+     ],
+     "tempi": [
+      "Se i 120 giorni stanno per scadere, sollecita la Direzione indicando la data."
+     ]
+    },
+    {
+     "come": "Eseguito il pagamento, si informano l'Avvocatura e, se indicato, il difensore della controparte, per evitare atti esecutivi. Poi si aggiorna il fascicolo del contenzioso e si valuta con il dirigente l'eventuale denuncia di danno erariale.",
+     "chi": [
+      "Tesoreria dello Stato presso la Banca d'Italia: esegue il bonifico",
+      "Ufficio I: comunica e aggiorna il fascicolo",
+      "Avvocatura dello Stato: riceve la comunicazione"
+     ],
+     "entrata": [
+      "Quietanza"
+     ],
+     "uscita": [
+      "Comunicazione di avvenuto pagamento",
+      "Fascicolo del contenzioso aggiornato"
+     ],
+     "tempi": [
+      "Comunica il pagamento appena eseguito: un precetto notificato dopo il pagamento genera contestazioni e possibili spese."
+     ]
+    }
    ]
   },
   "compensi": {
@@ -746,6 +922,86 @@
       }
      }
     ]
+   ],
+   "intro": [
+    {
+     "come": "Si parte dall'atto di nomina e dalla misura del compenso, si determinano il periodo da pagare e l'importo spettante e si registra l'impegno sul capitolo.",
+     "chi": [
+      "Autorità che ha nominato: adotta la nomina e fissa il compenso",
+      "Ufficio: istruisce e calcola",
+      "Dirigente: firma l'impegno",
+      "Ufficio centrale di bilancio: controlla la regolarità amministrativa e contabile"
+     ],
+     "entrata": [
+      "Decreto di nomina",
+      "Atto o norma che fissa il compenso"
+     ],
+     "uscita": [
+      "Prospetto del periodo e dell'importo",
+      "Decreto di impegno"
+     ],
+     "tempi": [
+      "Rispetta la periodicità prevista dall'atto di nomina: mensile, semestrale o a fine incarico."
+     ]
+    },
+    {
+     "come": "Si raccolgono le dichiarazioni del percettore e l'attestazione dell'attività svolta, si calcolano le ritenute, si verificano limiti e cumuli e si adotta l'atto di liquidazione.",
+     "chi": [
+      "Percettore: rende le dichiarazioni fiscali, previdenziali e bancarie",
+      "Organo o ufficio presso cui si svolge l'attività: la attesta",
+      "Ufficio: calcola e predispone l'atto",
+      "Dirigente: firma"
+     ],
+     "entrata": [
+      "Dichiarazioni del percettore",
+      "Relazione, verbali o presenze",
+      "Eventuale fattura"
+     ],
+     "uscita": [
+      "Calcolo di lordo, ritenute e netto",
+      "Atto di liquidazione"
+     ],
+     "tempi": [
+      "Non c'è un termine di legge generale: segui i tempi dell'atto di nomina."
+     ]
+    },
+    {
+     "come": "Si emette l'ordine di pagamento con le ritenute calcolate e lo si trasmette al controllo dell'Ufficio centrale di bilancio.",
+     "chi": [
+      "Ufficio: emette il titolo",
+      "Dirigente: firma",
+      "Ufficio centrale di bilancio: controlla la regolarità amministrativa e contabile"
+     ],
+     "entrata": [
+      "Atto di liquidazione"
+     ],
+     "uscita": [
+      "Ordine di pagamento",
+      "Titolo trasmesso al controllo"
+     ],
+     "tempi": [
+      "Le ritenute operate si versano di norma entro il 16 del mese successivo al pagamento."
+     ]
+    },
+    {
+     "come": "Eseguito il pagamento, si registra la quietanza e si curano gli adempimenti del sostituto d'imposta e le comunicazioni sugli incarichi.",
+     "chi": [
+      "Tesoreria dello Stato presso la Banca d'Italia: esegue il bonifico",
+      "Ufficio: registra e comunica",
+      "Ufficio che cura gli adempimenti del sostituto d'imposta: Certificazione Unica"
+     ],
+     "entrata": [
+      "Quietanza"
+     ],
+     "uscita": [
+      "Certificazione Unica",
+      "Comunicazione all'amministrazione di appartenenza, se il percettore è dipendente pubblico"
+     ],
+     "tempi": [
+      "Comunicazione all'amministrazione di appartenenza entro 15 giorni dall'erogazione (art. 53, comma 11, D.Lgs. 165/2001).",
+      "Certificazione Unica entro il 16 marzo dell'anno successivo."
+     ]
+    }
    ]
   },
   "altro": {
@@ -869,6 +1125,77 @@
       }
      }
     ]
+   ],
+   "intro": [
+    {
+     "come": "Si individua l'atto che autorizza la spesa, si verifica la copertura e si registra l'impegno.",
+     "chi": [
+      "Ufficio: istruisce",
+      "Dirigente: firma",
+      "Ufficio centrale di bilancio: controlla la regolarità amministrativa e contabile"
+     ],
+     "entrata": [
+      "Richiesta o presupposto della spesa"
+     ],
+     "uscita": [
+      "Atto di autorizzazione",
+      "Impegno"
+     ],
+     "tempi": [
+      "Verifica se la norma o l'atto che dispone la spesa fissa un termine e inseriscilo come scadenza nei dati."
+     ]
+    },
+    {
+     "come": "Si raccolgono e controllano i documenti che giustificano il pagamento e si adotta l'atto di liquidazione.",
+     "chi": [
+      "Beneficiario: fornisce i documenti",
+      "Ufficio: verifica e predispone l'atto",
+      "Dirigente: firma"
+     ],
+     "entrata": [
+      "Documenti giustificativi"
+     ],
+     "uscita": [
+      "Atto di liquidazione"
+     ],
+     "tempi": [
+      "Sopra i 5.000 € considera anche i tempi della verifica presso Agenzia delle Entrate-Riscossione."
+     ]
+    },
+    {
+     "come": "Si registra la spesa nel sistema contabile e si emette il titolo di pagamento, che passa al controllo.",
+     "chi": [
+      "Ufficio: registra ed emette il titolo",
+      "Dirigente: firma",
+      "Ufficio centrale di bilancio: controlla la regolarità amministrativa e contabile"
+     ],
+     "entrata": [
+      "Atto di liquidazione"
+     ],
+     "uscita": [
+      "Titolo di pagamento"
+     ],
+     "tempi": [
+      "Emetti il titolo con margine rispetto alla scadenza, considerando i tempi del controllo."
+     ]
+    },
+    {
+     "come": "Si verifica il pagamento, si registra la quietanza e si archivia il fascicolo.",
+     "chi": [
+      "Tesoreria dello Stato presso la Banca d'Italia: esegue il bonifico",
+      "Ufficio: registra e archivia"
+     ],
+     "entrata": [
+      "Titolo con esito positivo"
+     ],
+     "uscita": [
+      "Quietanza",
+      "Fascicolo archiviato"
+     ],
+     "tempi": [
+      "Non c'è un termine generale: segui quello dell'atto di autorizzazione."
+     ]
+    }
    ]
   }
  },

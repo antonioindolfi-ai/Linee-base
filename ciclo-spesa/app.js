@@ -31,7 +31,7 @@ const S = {
   formDirty: false, advWarn: false, delAsk: false, sospAsk: false, busy: false,
   f: {q:'', tipo:'', fase:'aperte', stato:'', mie:false, eserc:''},
   segreto: null, offline: false, poll: null,
-  modo: 'guida', wizIdx: null, wizSpiega: false, wizRiep: false,
+  modo: 'guida', wizIdx: null, wizSpiega: false, wizRiep: false, wizIntro: null,
 };
 const canWrite = () => S.me && (S.me.ruolo === 'admin' || S.me.ruolo === 'operatore');
 const isAdmin = () => S.me && S.me.ruolo === 'admin';
@@ -240,7 +240,7 @@ function renderGuida() {
     <p class="note">Le liste di controllo sono un supporto operativo e non sostituiscono la disciplina vigente, le circolari della Ragioneria generale dello Stato e le indicazioni dell'Ufficio centrale di bilancio. Gli adempimenti segnati come obbligatori sono quelli senza i quali la pratica normalmente non può passare alla fase successiva; l'applicazione consente comunque di avanzare, annotandolo nella cronologia. Le liste si modificano nel file <code>static/modello.json</code> sul server.</p>
     <h3>Liste di controllo per tipologia</h3><p class="mut">Apri una voce per leggere come si fa. Sono le stesse spiegazioni della risposta «No, spiegami» nella procedura guidata.</p>
     ${ALL.map(k => `<details class="tipo"><summary>${esc(TIPI[k].n)} <span>· ${esc(TIPI[k].s)}</span></summary>
-      ${TIPI[k].check.map((l, i) => `<p><b>${i + 1}. ${esc(FASI[i].n)}</b></p><ul class="tlist">${l.map(it => `<li><details class="voce"><summary>${esc(it.t)}${it.r ? '' : ' <em>(se pertinente)</em>'}${it.ref ? ` <em>· ${esc(it.ref)}</em>` : ''}</summary>${aiutoHtml(it)}</details></li>`).join('')}</ul>`).join('')}
+      ${TIPI[k].check.map((l, i) => `<p><b>${i + 1}. ${esc(FASI[i].n)}</b></p>${TIPI[k].intro?.[i] ? `<p class="mut">${esc(TIPI[k].intro[i].come)}</p>` : ''}<ul class="tlist">${l.map(it => `<li><details class="voce"><summary>${esc(it.t)}${it.r ? '' : ' <em>(se pertinente)</em>'}${it.ref ? ` <em>· ${esc(it.ref)}</em>` : ''}</summary>${aiutoHtml(it)}</details></li>`).join('')}</ul>`).join('')}
     </details>`).join('')}
   </article>
   <aside><h3>Termini da presidiare</h3><div class="terms">
@@ -280,7 +280,7 @@ async function renderUtenti() {
 }
 
 /* ---------------- pannello pratica ---------------- */
-function openDrawer(id) { S.modo = 'guida'; S.wizIdx = null; S.wizSpiega = false; S.wizRiep = false; S.open = id; S.newMode = false; S.formDirty = false; S.advWarn = false; S.delAsk = false; S.sospAsk = false; S.det = null; const p = S.pratiche.get(id); S.viewFase = Math.min(p?.fase ?? 0, 3); showDrawer(); renderDrawer(true); caricaDettaglio(id); }
+function openDrawer(id) { S.modo = 'guida'; S.wizIdx = null; S.wizSpiega = false; S.wizRiep = false; S.wizIntro = null; S.open = id; S.newMode = false; S.formDirty = false; S.advWarn = false; S.delAsk = false; S.sospAsk = false; S.det = null; const p = S.pratiche.get(id); S.viewFase = Math.min(p?.fase ?? 0, 3); showDrawer(); renderDrawer(true); caricaDettaglio(id); }
 function openNew() { S.open = null; S.newMode = true; showDrawer(); renderNew(); }
 function showDrawer() { $('#drawer').hidden = false; $('#scrim').hidden = false; document.body.style.overflow = 'hidden'; }
 function closeDrawer() { S.open = null; S.newMode = false; S.det = null; $('#drawer').hidden = true; $('#scrim').hidden = true; document.body.style.overflow = ''; }
@@ -371,6 +371,8 @@ function renderGuidata(p) {
   const n = {fatto: 0, dafare: 0, aperto: 0}; lst.forEach(it => n[statoVoce(p, it)]++);
   const ro = canWrite() && S.det ? '' : 'disabled';
   let idx = S.wizIdx ?? lst.findIndex(it => statoVoce(p, it) === 'aperto');
+  const iniziata = n.fatto + n.dafare > 0;
+  if (S.wizIntro === true || (S.wizIntro == null && !iniziata && !S.wizRiep && S.wizIdx == null)) return renderIntro(p, lst, iniziata);
   let h = `<div class="g-head"><span class="tag">Procedura guidata · fase ${fase + 1} di ${FASI.length}</span><h3 class="g-title">${esc(FASI[fase].n)}</h3>
     <p class="ph-desc">${esc(FASI[fase].d)}</p>
     <div class="g-prog"><progress class="prog wide" max="${lst.length}" value="${n.fatto}"></progress><span class="sm"><b class="num">${n.fatto}</b> fatti · <b class="num">${n.dafare}</b> da fare · <b class="num">${n.aperto}</b> senza risposta</span></div></div>`;
@@ -384,7 +386,7 @@ function renderGuidata(p) {
       ${miss.length ? `<p class="warnbox">Per passare alla fase successiva mancano <b>${miss.length}</b> adempimenti obbligatori. Puoi completarli ora oppure avanzare comunque: resterà annotato nella cronologia.</p>` : '<p class="okbox">Tutti gli adempimenti obbligatori di questa fase sono fatti.</p>'}
       ${avanzaHtml(p)}
       ${n.aperto ? '<div class="actions"><button class="btn ghost" data-wiz="domande" type="button">Riprendi le domande</button></div>' : ''}</div>`;
-    return h + `<div class="g-foot"><button class="btn sm ghost" data-wiz="elenco" type="button">Vedi l'elenco completo della fase</button></div>`;
+    return h + `<div class="g-foot"><button class="btn sm ghost" data-wiz="intro" type="button">Come si svolge questa fase</button><button class="btn sm ghost" data-wiz="elenco" type="button">Vedi l'elenco completo della fase</button></div>`;
   }
 
   const it = lst[idx], st = statoVoce(p, it), c = p.check?.[it.id];
@@ -398,8 +400,31 @@ function renderGuidata(p) {
         <div class="actions"><button class="btn primary" data-wiz="si" type="button" ${ro}>Fatto, andiamo avanti</button><button class="btn" data-wiz="so" type="button" ${ro}>Lo farò dopo</button></div></div>`
       : `<div class="q-btns"><button class="btn primary" data-wiz="si" type="button" ${ro}>Sì</button><button class="btn" data-wiz="so" type="button" ${ro}>No, ma so come si fa</button><button class="btn" data-wiz="spiega" type="button">No, spiegami</button></div>`}
   </div>
-  <div class="g-foot"><button class="btn sm ghost" data-wiz="prev" type="button" ${idx === 0 ? 'disabled' : ''}>← Domanda precedente</button><button class="btn sm ghost" data-wiz="riep" type="button">Riepilogo della fase</button><button class="btn sm ghost" data-wiz="elenco" type="button">Elenco completo</button></div>`;
+  <div class="g-foot"><button class="btn sm ghost" data-wiz="prev" type="button" ${idx === 0 ? 'disabled' : ''}>← Domanda precedente</button><button class="btn sm ghost" data-wiz="riep" type="button">Riepilogo della fase</button><button class="btn sm ghost" data-wiz="intro" type="button">Come si svolge questa fase</button><button class="btn sm ghost" data-wiz="elenco" type="button">Elenco completo</button></div>`;
   return h;
+}
+function renderIntro(p, lst, iniziata) {
+  const fase = p.fase ?? 0, it = TIPI[p.tipo].intro?.[fase];
+  const lista = (a, et) => `<ul>${(a || []).map(x => { const k = et ? x.indexOf(': ') : -1; return `<li>${k > 0 ? `<b>${esc(x.slice(0, k))}</b>: ${esc(x.slice(k + 2))}` : esc(x)}</li>`; }).join('')}</ul>`;
+  const s = scadenza(p), r = residuo(p), rif = termineRifiuto(p);
+  const qui = [];
+  if (s && fase >= 1) qui.push(`Scadenza di questa pratica: <b class="num">${fmtD(s.d)}</b> (${r < 0 ? `<span class="txt-bad">scaduta da ${-r} giorni</span>` : r === 0 ? 'oggi' : `tra ${r} giorni`}), ${esc(s.base)}.`);
+  if (rif != null) qui.push(rif < 0 ? `<span class="txt-bad">Il termine di 15 giorni per l'esito della fattura è superato da ${-rif} giorni.</span>` : `Esito della fattura da comunicare entro <b>${rif}</b> giorni.`);
+  if (!s && fase >= 1 && (p.tipo === 'beni' || p.tipo === 'legali')) qui.push(p.tipo === 'beni' ? 'Inserisci nei dati la data di ricezione della fattura su SdI per calcolare le scadenze.' : 'Inserisci nei dati la data di notifica del titolo esecutivo per calcolare i 120 giorni.');
+  if (p.sospesa) qui.push(`<span class="txt-bad">La pratica è sospesa</span>${p.motivoSospensione ? ': ' + esc(p.motivoSospensione) : ''}.`);
+  return `<div class="g-head"><span class="tag">Procedura guidata · fase ${fase + 1} di ${FASI.length}</span><h3 class="g-title">Come si svolge: ${esc(FASI[fase].n.toLowerCase())}</h3>
+      <p class="intro-come">${esc(it?.come || FASI[fase].d)}</p></div>
+    <div class="intro">
+      <section class="i-seq"><h4>Le sottofasi, in ordine</h4><ol class="flow">${lst.map(v => { const st = statoVoce(p, v);
+        return `<li class="f-${st}"><span class="f-t">${esc(v.t)}</span><span class="f-m">${v.r ? 'obbligatoria' : 'se pertinente'}${st === 'fatto' ? ' · <span class="txt-ok">fatta</span>' : st === 'dafare' ? ' · da fare' : ''}</span></li>`; }).join('')}</ol></section>
+      ${it ? `<div class="i-grid">
+        <section class="i-box"><h4>Chi interviene</h4>${lista(it.chi, true)}</section>
+        <section class="i-box"><h4>Documenti</h4><p class="i-sub">Servono</p>${lista(it.entrata)}<p class="i-sub">Si producono</p>${lista(it.uscita)}</section>
+        <section class="i-box"><h4>Tempi e scadenze</h4>${lista(it.tempi)}</section>
+      </div>` : ''}
+      ${qui.length ? `<div class="i-qui"><h4>Per questa pratica</h4><ul>${qui.map(x => `<li>${x}</li>`).join('')}</ul></div>` : ''}
+      <div class="actions"><button class="btn primary" data-wiz="inizia" type="button">${iniziata ? 'Riprendi le domande' : 'Inizia le domande'}</button><button class="btn ghost" data-wiz="elenco" type="button">Vedi l'elenco completo</button></div>
+    </div>`;
 }
 function renderElenco(p, vf) {
   const fase = p.fase ?? 0, lst = TIPI[p.tipo]?.check[vf] || [], dis = canWrite() && S.det ? '' : 'disabled';
@@ -450,7 +475,7 @@ function renderForm(p) {
 function avanza(force) {
   const p = S.det; if (!p) return; const fase = p.fase ?? 0;
   if (mancanti(p, fase).length && !force) { S.advWarn = true; renderDrawer(false); return; }
-  S.advWarn = false; S.viewFase = Math.min(fase + 1, 3); S.modo = 'guida'; S.wizIdx = null; S.wizSpiega = false; S.wizRiep = false;
+  S.advWarn = false; S.viewFase = Math.min(fase + 1, 3); S.modo = 'guida'; S.wizIdx = null; S.wizSpiega = false; S.wizRiep = false; S.wizIntro = null;
   modifica(S.open, {azione: {tipo: 'avanza', fase_attesa: fase, forza: !!force}}).then(ok => { if (ok) vediFase(); if (ok && fase + 1 >= CONCLUSA) toast('Pratica conclusa.'); });
 }
 async function creaPratica(campi, extra = {}) {
@@ -494,8 +519,8 @@ document.addEventListener('click', async e => {
     case 'adv': avanza(false); break;
     case 'adv-force': avanza(true); break;
     case 'adv-cancel': S.advWarn = false; renderDrawer(false); break;
-    case 'back': if (p) { S.advWarn = false; S.viewFase = p.fase - 1; S.modo = 'guida'; S.wizIdx = null; S.wizSpiega = false; S.wizRiep = false; modifica(id, {azione: {tipo: 'indietro', fase_attesa: p.fase}}); } break;
-    case 'reopen': if (p) { S.viewFase = 3; S.modo = 'guida'; S.wizIdx = null; S.wizRiep = true; modifica(id, {azione: {tipo: 'riapri', fase_attesa: p.fase}}); } break;
+    case 'back': if (p) { S.advWarn = false; S.viewFase = p.fase - 1; S.modo = 'guida'; S.wizIdx = null; S.wizSpiega = false; S.wizRiep = false; S.wizIntro = false; modifica(id, {azione: {tipo: 'indietro', fase_attesa: p.fase}}); } break;
+    case 'reopen': if (p) { S.viewFase = 3; S.modo = 'guida'; S.wizIdx = null; S.wizRiep = true; S.wizIntro = false; modifica(id, {azione: {tipo: 'riapri', fase_attesa: p.fase}}); } break;
     case 'sosp': S.sospAsk = true; renderDrawer(false); $('#sosp-m')?.focus(); break;
     case 'sosp-no': S.sospAsk = false; renderDrawer(false); break;
     case 'sosp-ok': { const m = $('#sosp-m').value.trim(); S.sospAsk = false; modifica(id, {azione: {tipo: 'sospendi', motivo: m}}); break; }
@@ -508,13 +533,14 @@ document.addEventListener('click', async e => {
   }
 });
 function wiz(az, i) {
-  const p = S.det; if (!p && az !== 'elenco') return;
+  const p = S.det; if (!p && !['elenco', 'inizia', 'intro', 'riep'].includes(az)) return;
   switch (az) {
     case 'si': case 'so': rispondi(az, i); return;
     case 'spiega': case 'vai': rispondi(az, i).then(vediFase); return;
-    case 'prev': { const lst = TIPI[p.tipo].check[p.fase]; let idx = S.wizIdx ?? lst.findIndex(it => statoVoce(p, it) === 'aperto'); if (idx < 0) idx = lst.length; S.wizIdx = Math.max(0, idx - 1); S.wizSpiega = false; break; }
-    case 'riep': S.wizRiep = true; S.wizSpiega = false; break;
-    case 'domande': S.wizRiep = false; S.wizIdx = null; S.wizSpiega = false; break;
+    case 'prev': { const lst = TIPI[p.tipo].check[p.fase]; let idx = S.wizIdx ?? lst.findIndex(it => statoVoce(p, it) === 'aperto'); if (idx < 0) idx = lst.length; S.wizIdx = Math.max(0, idx - 1); S.wizSpiega = false; S.wizIntro = false; break; }
+    case 'riep': S.wizRiep = true; S.wizSpiega = false; S.wizIntro = false; break;
+    case 'domande': case 'inizia': S.wizRiep = false; S.wizIdx = null; S.wizSpiega = false; S.wizIntro = false; renderDrawer(false); vediFase(); return;
+    case 'intro': S.wizIntro = true; S.wizSpiega = false; renderDrawer(false); vediFase(); return;
     case 'elenco': S.modo = 'elenco'; S.wizSpiega = false; break;
     case 'guida': S.modo = 'guida'; S.wizRiep = false; S.wizIdx = null; break;
   }
