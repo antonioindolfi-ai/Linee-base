@@ -281,7 +281,7 @@ class Archivio:
         tipo = body.get("tipo")
         if tipo not in TIPI:
             raise Errore(400, "Tipologia non valida.")
-        d = {"tipo": tipo, "fase": 0, "check": {}, "sospesa": False, "motivoSospensione": "",
+        d = {"tipo": tipo, "fase": 0, "check": {}, "dafare": {}, "sospesa": False, "motivoSospensione": "",
              "assegnatario": me["id"], "creatoDa": me["id"], "creata": time.time() * 1000,
              "esempio": bool(body.get("esempio"))}
         d.update(valida_campi(tipo, body.get("campi") or {}))
@@ -323,10 +323,22 @@ class Archivio:
                 was = bool(d["check"].get(iid))
                 if bool(on) and not was:
                     d["check"][iid] = {"ok": True, "by": me["id"], "at": time.time() * 1000}
+                    d.setdefault("dafare", {}).pop(iid, None)
                     msgs.append("Completato: " + voce["t"])
                 elif not on and was:
                     d["check"].pop(iid, None)
                     msgs.append("Riaperto: " + voce["t"])
+            for iid, on in (body.get("dafare") or {}).items():
+                voce = VOCI[tipo].get(iid)
+                if not voce:
+                    raise Errore(400, "Adempimento sconosciuto.")
+                dafare = d.setdefault("dafare", {})
+                if bool(on) and iid not in dafare and not d["check"].get(iid):
+                    dafare[iid] = {"by": me["id"], "at": time.time() * 1000}
+                    msgs.append("Da fare: " + voce["t"])
+                elif not on and iid in dafare:
+                    dafare.pop(iid, None)
+                    msgs.append("Tolto dalle cose da fare: " + voce["t"])
             az = body.get("azione")
             if az:
                 msgs.append(self._azione(me, d, az))

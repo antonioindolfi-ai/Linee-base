@@ -31,6 +31,7 @@ const S = {
   formDirty: false, advWarn: false, delAsk: false, sospAsk: false, busy: false,
   f: {q:'', tipo:'', fase:'aperte', stato:'', mie:false, eserc:''},
   segreto: null, offline: false, poll: null,
+  modo: 'guida', wizIdx: null, wizSpiega: false, wizRiep: false,
 };
 const canWrite = () => S.me && (S.me.ruolo === 'admin' || S.me.ruolo === 'operatore');
 const isAdmin = () => S.me && S.me.ruolo === 'admin';
@@ -170,8 +171,9 @@ function renderCruscotto() {
 }
 function card(p) {
   const a = avanzamento(p); const rif = termineRifiuto(p);
+  const df = (p.fase ?? 0) < CONCLUSA ? (TIPI[p.tipo]?.check[p.fase ?? 0] || []).filter(i => p.dafare?.[i.id] && !p.check?.[i.id]).length : 0;
   return `<button class="card" data-open="${esc(p.id)}">
-    <div class="card-top"><span class="tag">${esc(TIPI[p.tipo]?.n || '')}</span>${p.esempio ? '<span class="chip ex">Esempio</span>' : ''}${scadChip(p)}${rif != null && rif >= 0 && rif <= 5 ? `<span class="chip warn">Esito fattura: ${rif} gg</span>` : ''}</div>
+    <div class="card-top"><span class="tag">${esc(TIPI[p.tipo]?.n || '')}</span>${p.esempio ? '<span class="chip ex">Esempio</span>' : ''}${scadChip(p)}${rif != null && rif >= 0 && rif <= 5 ? `<span class="chip warn">Esito fattura: ${rif} gg</span>` : ''}${df ? `<span class="chip acc">${df} da fare</span>` : ''}</div>
     <div class="card-title">${esc(p.oggetto || '(senza oggetto)')}</div>
     ${p.beneficiario ? `<div class="card-sub">${esc(p.beneficiario)}</div>` : ''}
     <div class="card-foot"><span class="amt num">${eur(p.importo)}</span><progress class="prog" max="${a.tot || 1}" value="${a.fatti}" title="Adempimenti della fase"></progress><span class="num">${a.fatti}/${a.tot}</span></div>
@@ -236,9 +238,9 @@ function renderGuida() {
   <div class="guide"><article>
     ${FASI.map((f, i) => `<div class="ph"><h3><span class="chip acc num">${i + 1}</span>${esc(f.n)}</h3><p>${esc(f.d)}</p></div>`).join('')}
     <p class="note">Le liste di controllo sono un supporto operativo e non sostituiscono la disciplina vigente, le circolari della Ragioneria generale dello Stato e le indicazioni dell'Ufficio centrale di bilancio. Gli adempimenti segnati come obbligatori sono quelli senza i quali la pratica normalmente non può passare alla fase successiva; l'applicazione consente comunque di avanzare, annotandolo nella cronologia. Le liste si modificano nel file <code>static/modello.json</code> sul server.</p>
-    <h3>Liste di controllo per tipologia</h3>
+    <h3>Liste di controllo per tipologia</h3><p class="mut">Apri una voce per leggere come si fa. Sono le stesse spiegazioni della risposta «No, spiegami» nella procedura guidata.</p>
     ${ALL.map(k => `<details class="tipo"><summary>${esc(TIPI[k].n)} <span>· ${esc(TIPI[k].s)}</span></summary>
-      ${TIPI[k].check.map((l, i) => `<p><b>${i + 1}. ${esc(FASI[i].n)}</b></p><ul class="tlist">${l.map(it => `<li>${esc(it.t)}${it.r ? '' : ' <em>(se pertinente)</em>'}${it.ref ? ` <em>· ${esc(it.ref)}</em>` : ''}</li>`).join('')}</ul>`).join('')}
+      ${TIPI[k].check.map((l, i) => `<p><b>${i + 1}. ${esc(FASI[i].n)}</b></p><ul class="tlist">${l.map(it => `<li><details class="voce"><summary>${esc(it.t)}${it.r ? '' : ' <em>(se pertinente)</em>'}${it.ref ? ` <em>· ${esc(it.ref)}</em>` : ''}</summary>${aiutoHtml(it)}</details></li>`).join('')}</ul>`).join('')}
     </details>`).join('')}
   </article>
   <aside><h3>Termini da presidiare</h3><div class="terms">
@@ -278,7 +280,7 @@ async function renderUtenti() {
 }
 
 /* ---------------- pannello pratica ---------------- */
-function openDrawer(id) { S.open = id; S.newMode = false; S.formDirty = false; S.advWarn = false; S.delAsk = false; S.sospAsk = false; S.det = null; const p = S.pratiche.get(id); S.viewFase = Math.min(p?.fase ?? 0, 3); showDrawer(); renderDrawer(true); caricaDettaglio(id); }
+function openDrawer(id) { S.modo = 'guida'; S.wizIdx = null; S.wizSpiega = false; S.wizRiep = false; S.open = id; S.newMode = false; S.formDirty = false; S.advWarn = false; S.delAsk = false; S.sospAsk = false; S.det = null; const p = S.pratiche.get(id); S.viewFase = Math.min(p?.fase ?? 0, 3); showDrawer(); renderDrawer(true); caricaDettaglio(id); }
 function openNew() { S.open = null; S.newMode = true; showDrawer(); renderNew(); }
 function showDrawer() { $('#drawer').hidden = false; $('#scrim').hidden = false; document.body.style.overflow = 'hidden'; }
 function closeDrawer() { S.open = null; S.newMode = false; S.det = null; $('#drawer').hidden = true; $('#scrim').hidden = true; document.body.style.overflow = ''; }
@@ -320,17 +322,10 @@ function renderDrawer(full) {
   $('#dr-step').innerHTML = `<div class="stepper">${FASI.map((f, i) => { const cls = i < fase ? 'done' : i === fase ? 'cur' : ''; return `<button class="step ${cls} ${i === vf ? 'sel' : ''}" data-vf="${i}" type="button"><span class="dot">${i < fase ? '✓' : i + 1}</span><span class="lb">${esc(f.n)}</span></button>`; }).join('')}
     <div class="step ${fase >= CONCLUSA ? 'done' : ''}"><span class="dot">${fase >= CONCLUSA ? '✓' : '●'}</span><span class="lb">Conclusa</span></div></div>`;
 
-  const lst = TIPI[p.tipo]?.check[vf] || []; const miss = mancanti(p, vf); const dis = canWrite() && S.det ? '' : 'disabled';
-  let ph = `<h3>Fase ${vf + 1} · ${esc(FASI[vf].n)}${vf !== Math.min(fase, 3) || fase >= CONCLUSA ? ' <span class="chip">consultazione</span>' : ''}</h3><p class="ph-desc">${esc(FASI[vf].d)}</p>`;
-  ph += lst.map(it => { const c = p.check?.[it.id];
-    return `<label class="chk ${c ? 'on' : ''}"><input type="checkbox" data-chk="${it.id}" ${c ? 'checked' : ''} ${dis}><span class="tx">${esc(it.t)}${it.r ? '<span class="req">obbligatorio</span>' : ''}</span>${it.ref ? `<span class="ref">${esc(it.ref)}</span>` : ''}${c ? `<span class="by">Fatto il ${fmtTs(c.at)} da ${who(c.by)}</span>` : ''}</label>`; }).join('');
-  if (vf === fase && fase < CONCLUSA) {
-    ph += `<div class="actions w"><button class="btn primary" data-act="adv" type="button" ${dis}>${fase === 3 ? 'Concludi la pratica' : `Passa a ${esc(FASI[fase + 1].n)}`}</button>${fase > 0 ? `<button class="btn" data-act="back" type="button" ${dis}>Torna a ${esc(FASI[fase - 1].n)}</button>` : ''}</div>`;
-    if (S.advWarn && miss.length) ph += `<div class="warnbox w"><b>Mancano ${miss.length} adempimenti obbligatori:</b><ul>${miss.map(i => `<li>${esc(i.t)}</li>`).join('')}</ul><div class="actions tight"><button class="btn sm" data-act="adv-force" type="button">Avanza comunque</button><button class="btn sm ghost" data-act="adv-cancel" type="button">Annulla</button></div></div>`;
-  } else if (fase >= CONCLUSA && vf === 3) {
-    ph += `<div class="actions w"><button class="btn" data-act="reopen" type="button" ${dis}>Riapri in fase Pagamento</button></div>`;
-  }
-  $('#dr-phase').innerHTML = ph;
+  const dis = canWrite() && S.det ? '' : 'disabled';
+  const guidata = S.modo === 'guida' && vf === Math.min(fase, 3) && fase < CONCLUSA;
+  $('#dr-phase').classList.toggle('guida', guidata);
+  $('#dr-phase').innerHTML = guidata ? renderGuidata(p) : renderElenco(p, vf);
 
   const rif = termineRifiuto(p);
   const assegnabili = [...S.utenti.values()].filter(u => u.attivo && u.ruolo !== 'lettura');
@@ -351,6 +346,87 @@ function renderDrawer(full) {
 
   $('#dr-log').innerHTML = S.det ? (S.det.log.map(l => `<li><time class="num">${fmtTs(l.ts * 1000)}</time><span>${esc(l.msg)} <span class="mut">· ${l.utente_id == null ? 'sistema' : who(l.utente_id)}</span></span></li>`).join('') || '<li><span>Nessuna attività.</span></li>') : '<li><span class="mut">Caricamento…</span></li>';
   $('#dr-del').innerHTML = S.delAsk ? '<h3>Eliminare la pratica?</h3><p class="ph-desc">L\'eliminazione è definitiva per tutti i colleghi. Nel registro delle operazioni resta traccia dell\'eliminazione.</p><div class="actions"><button class="btn danger" data-act="del-ok" type="button">Elimina definitivamente</button><button class="btn" data-act="del-no" type="button">Annulla</button></div>' : '<button class="btn sm danger" data-act="del" type="button">Elimina pratica</button>';
+}
+
+/* ---------------- procedura guidata ---------------- */
+const statoVoce = (p, it) => p.check?.[it.id] ? 'fatto' : p.dafare?.[it.id] ? 'dafare' : 'aperto';
+function aiutoHtml(it) {
+  const h = it.aiuto; if (!h) return '<p class="mut">Spiegazione non disponibile per questo adempimento.</p>';
+  return `<div class="aiuto">
+    <p>${esc(h.cosa)}</p>
+    <h4>Come si fa</h4><ol>${h.passi.map(x => `<li>${esc(x)}</li>`).join('')}</ol>
+    ${h.dove ? `<h4>Dove</h4><p>${esc(h.dove)}</p>` : ''}
+    ${h.attenzione ? `<div class="attn"><b>Attenzione.</b> ${esc(h.attenzione)}</div>` : ''}
+    ${it.ref ? `<p class="mut sm">Riferimento: ${esc(it.ref)}</p>` : ''}
+  </div>`;
+}
+function avanzaHtml(p) {
+  const fase = p.fase ?? 0, miss = mancanti(p, fase), dis = canWrite() && S.det ? '' : 'disabled';
+  let h = `<div class="actions w"><button class="btn primary" data-act="adv" type="button" ${dis}>${fase === 3 ? 'Concludi la pratica' : `Passa a ${esc(FASI[fase + 1].n)}`}</button>${fase > 0 ? `<button class="btn" data-act="back" type="button" ${dis}>Torna a ${esc(FASI[fase - 1].n)}</button>` : ''}</div>`;
+  if (S.advWarn && miss.length) h += `<div class="warnbox w"><b>Mancano ${miss.length} adempimenti obbligatori:</b><ul>${miss.map(i => `<li>${esc(i.t)}</li>`).join('')}</ul><div class="actions tight"><button class="btn sm" data-act="adv-force" type="button">Avanza comunque</button><button class="btn sm ghost" data-act="adv-cancel" type="button">Annulla</button></div></div>`;
+  return h;
+}
+function renderGuidata(p) {
+  const fase = p.fase ?? 0, lst = TIPI[p.tipo].check[fase];
+  const n = {fatto: 0, dafare: 0, aperto: 0}; lst.forEach(it => n[statoVoce(p, it)]++);
+  const ro = canWrite() && S.det ? '' : 'disabled';
+  let idx = S.wizIdx ?? lst.findIndex(it => statoVoce(p, it) === 'aperto');
+  let h = `<div class="g-head"><span class="tag">Procedura guidata · fase ${fase + 1} di ${FASI.length}</span><h3 class="g-title">${esc(FASI[fase].n)}</h3>
+    <p class="ph-desc">${esc(FASI[fase].d)}</p>
+    <div class="g-prog"><progress class="prog wide" max="${lst.length}" value="${n.fatto}"></progress><span class="sm"><b class="num">${n.fatto}</b> fatti · <b class="num">${n.dafare}</b> da fare · <b class="num">${n.aperto}</b> senza risposta</span></div></div>`;
+
+  if (S.wizRiep || idx < 0) {
+    const miss = mancanti(p, fase);
+    h += `<div class="riep"><h4>Riepilogo della fase</h4><ul>${lst.map((it, i) => { const st = statoVoce(p, it), c = p.check?.[it.id];
+      return `<li class="r-${st}"><span class="chip ${st === 'fatto' ? 'ok' : st === 'dafare' ? 'warn' : ''}">${st === 'fatto' ? 'Fatto' : st === 'dafare' ? 'Da fare' : 'Senza risposta'}</span>
+        <div><span>${esc(it.t)}</span>${it.r ? '<span class="req">obbligatorio</span>' : ''}${c ? `<span class="by">il ${fmtTs(c.at)} da ${who(c.by)}</span>` : ''}
+        ${st !== 'fatto' ? `<div class="actions tight r-act"><button class="btn sm" data-wiz="si" data-i="${i}" type="button" ${ro}>L'ho fatto</button><button class="btn sm ghost" data-wiz="vai" data-i="${i}" type="button">Spiegami</button></div>` : ''}</div></li>`; }).join('')}</ul>
+      ${miss.length ? `<p class="warnbox">Per passare alla fase successiva mancano <b>${miss.length}</b> adempimenti obbligatori. Puoi completarli ora oppure avanzare comunque: resterà annotato nella cronologia.</p>` : '<p class="okbox">Tutti gli adempimenti obbligatori di questa fase sono fatti.</p>'}
+      ${avanzaHtml(p)}
+      ${n.aperto ? '<div class="actions"><button class="btn ghost" data-wiz="domande" type="button">Riprendi le domande</button></div>' : ''}</div>`;
+    return h + `<div class="g-foot"><button class="btn sm ghost" data-wiz="elenco" type="button">Vedi l'elenco completo della fase</button></div>`;
+  }
+
+  const it = lst[idx], st = statoVoce(p, it), c = p.check?.[it.id];
+  h += `<div class="q" role="group" aria-labelledby="q-item">
+    <div class="q-n">Domanda <span class="num">${idx + 1}</span> di <span class="num">${lst.length}</span> · ${it.r ? 'obbligatoria' : 'se pertinente'}</div>
+    <p class="q-ask">Hai fatto questo?</p>
+    <p class="q-item" id="q-item">${esc(it.t)}</p>
+    ${it.ref ? `<p class="q-ref">${esc(it.ref)}</p>` : ''}
+    ${st === 'fatto' ? `<p class="q-now">Già segnato come fatto il ${fmtTs(c.at)} da ${who(c.by)}.</p>` : st === 'dafare' ? '<p class="q-now">Segnato come da fare.</p>' : ''}
+    ${S.wizSpiega ? `<div class="spiega">${aiutoHtml(it)}
+        <div class="actions"><button class="btn primary" data-wiz="si" type="button" ${ro}>Fatto, andiamo avanti</button><button class="btn" data-wiz="so" type="button" ${ro}>Lo farò dopo</button></div></div>`
+      : `<div class="q-btns"><button class="btn primary" data-wiz="si" type="button" ${ro}>Sì</button><button class="btn" data-wiz="so" type="button" ${ro}>No, ma so come si fa</button><button class="btn" data-wiz="spiega" type="button">No, spiegami</button></div>`}
+  </div>
+  <div class="g-foot"><button class="btn sm ghost" data-wiz="prev" type="button" ${idx === 0 ? 'disabled' : ''}>← Domanda precedente</button><button class="btn sm ghost" data-wiz="riep" type="button">Riepilogo della fase</button><button class="btn sm ghost" data-wiz="elenco" type="button">Elenco completo</button></div>`;
+  return h;
+}
+function renderElenco(p, vf) {
+  const fase = p.fase ?? 0, lst = TIPI[p.tipo]?.check[vf] || [], dis = canWrite() && S.det ? '' : 'disabled';
+  const corrente = vf === Math.min(fase, 3) && fase < CONCLUSA;
+  let ph = `<h3>Fase ${vf + 1} · ${esc(FASI[vf].n)}${corrente ? '' : ' <span class="chip">consultazione</span>'}</h3><p class="ph-desc">${esc(FASI[vf].d)}</p>`;
+  if (corrente) ph += '<div class="actions tight"><button class="btn sm primary" data-wiz="guida" type="button">Torna alla procedura guidata</button></div>';
+  ph += lst.map(it => { const c = p.check?.[it.id], df = p.dafare?.[it.id];
+    return `<label class="chk ${c ? 'on' : ''}"><input type="checkbox" data-chk="${it.id}" ${c ? 'checked' : ''} ${dis}><span class="tx">${esc(it.t)}${it.r ? '<span class="req">obbligatorio</span>' : ''}${df && !c ? ' <span class="chip warn">Da fare</span>' : ''}</span>${it.ref ? `<span class="ref">${esc(it.ref)}</span>` : ''}${c ? `<span class="by">Fatto il ${fmtTs(c.at)} da ${who(c.by)}</span>` : ''}</label>`; }).join('');
+  if (corrente) ph += avanzaHtml(p);
+  else if (fase >= CONCLUSA && vf === 3) ph += `<div class="actions w"><button class="btn" data-act="reopen" type="button" ${dis}>Riapri in fase Pagamento</button></div>`;
+  return ph;
+}
+function vediFase() {
+  const b = $('.dr-body'), f = $('#dr-phase'); if (!b || !f) return;
+  const d = f.getBoundingClientRect().top - b.getBoundingClientRect().top - 12;
+  if (d < 0 || d > b.clientHeight / 3) b.scrollTop += d;
+}
+async function rispondi(azione, i) {
+  const p = S.det; if (!p) return;
+  const lst = TIPI[p.tipo].check[p.fase];
+  const idx = i != null ? i : (S.wizIdx ?? lst.findIndex(it => statoVoce(p, it) === 'aperto'));
+  const it = lst[idx]; if (!it) return;
+  if (azione === 'spiega') { S.wizSpiega = true; S.wizIdx = idx; renderDrawer(false); return; }
+  if (azione === 'vai') { S.wizRiep = false; S.wizSpiega = true; S.wizIdx = idx; renderDrawer(false); return; }
+  const body = azione === 'si' ? {check: {[it.id]: true}} : {check: {[it.id]: false}, dafare: {[it.id]: true}};
+  const ok = await modifica(S.open, body);
+  if (ok && !S.wizRiep) { S.wizIdx = null; S.wizSpiega = false; renderDrawer(false); vediFase(); }
 }
 
 function renderForm(p) {
@@ -374,8 +450,8 @@ function renderForm(p) {
 function avanza(force) {
   const p = S.det; if (!p) return; const fase = p.fase ?? 0;
   if (mancanti(p, fase).length && !force) { S.advWarn = true; renderDrawer(false); return; }
-  S.advWarn = false; S.viewFase = Math.min(fase + 1, 3);
-  modifica(S.open, {azione: {tipo: 'avanza', fase_attesa: fase, forza: !!force}}).then(ok => { if (ok && fase + 1 >= CONCLUSA) toast('Pratica conclusa.'); });
+  S.advWarn = false; S.viewFase = Math.min(fase + 1, 3); S.modo = 'guida'; S.wizIdx = null; S.wizSpiega = false; S.wizRiep = false;
+  modifica(S.open, {azione: {tipo: 'avanza', fase_attesa: fase, forza: !!force}}).then(ok => { if (ok) vediFase(); if (ok && fase + 1 >= CONCLUSA) toast('Pratica conclusa.'); });
 }
 async function creaPratica(campi, extra = {}) {
   try {
@@ -403,9 +479,10 @@ function csv() {
 }
 
 document.addEventListener('click', async e => {
-  const t = e.target.closest('[data-open],[data-act],[data-vf],[data-goto],[data-attiva],[data-reset]'); if (!t) return;
+  const t = e.target.closest('[data-open],[data-act],[data-vf],[data-goto],[data-attiva],[data-reset],[data-wiz]'); if (!t) return;
+  if (t.dataset.wiz) { wiz(t.dataset.wiz, t.dataset.i != null ? +t.dataset.i : null); return; }
   if (t.dataset.open) { openDrawer(t.dataset.open); return; }
-  if (t.dataset.vf != null) { S.viewFase = +t.dataset.vf; S.advWarn = false; renderDrawer(false); return; }
+  if (t.dataset.vf != null) { S.viewFase = +t.dataset.vf; S.advWarn = false; const f = S.det?.fase ?? 0; S.modo = (S.viewFase === Math.min(f, 3) && f < CONCLUSA) ? 'guida' : 'elenco'; S.wizSpiega = false; renderDrawer(false); return; }
   if (t.dataset.goto) { const g = t.dataset.goto; S.f = {...S.f, fase: g === 'concluse' ? String(CONCLUSA) : 'aperte', stato: ['scadute', 'inscadenza', 'sospese'].includes(g) ? g : '', eserc: g === 'concluse' ? String(new Date().getFullYear()) : ''}; location.hash = 'pratiche'; return; }
   if (t.dataset.attiva) { utente(+t.dataset.attiva, {attivo: t.dataset.val === '1'}); return; }
   if (t.dataset.reset) { const u = S.utenti.get(+t.dataset.reset); utente(u.id, {reimposta_password: true}, 'Nuova password provvisoria per ' + u.nome); return; }
@@ -417,8 +494,8 @@ document.addEventListener('click', async e => {
     case 'adv': avanza(false); break;
     case 'adv-force': avanza(true); break;
     case 'adv-cancel': S.advWarn = false; renderDrawer(false); break;
-    case 'back': if (p) { S.advWarn = false; S.viewFase = p.fase - 1; modifica(id, {azione: {tipo: 'indietro', fase_attesa: p.fase}}); } break;
-    case 'reopen': if (p) { S.viewFase = 3; modifica(id, {azione: {tipo: 'riapri', fase_attesa: p.fase}}); } break;
+    case 'back': if (p) { S.advWarn = false; S.viewFase = p.fase - 1; S.modo = 'guida'; S.wizIdx = null; S.wizSpiega = false; S.wizRiep = false; modifica(id, {azione: {tipo: 'indietro', fase_attesa: p.fase}}); } break;
+    case 'reopen': if (p) { S.viewFase = 3; S.modo = 'guida'; S.wizIdx = null; S.wizRiep = true; modifica(id, {azione: {tipo: 'riapri', fase_attesa: p.fase}}); } break;
     case 'sosp': S.sospAsk = true; renderDrawer(false); $('#sosp-m')?.focus(); break;
     case 'sosp-no': S.sospAsk = false; renderDrawer(false); break;
     case 'sosp-ok': { const m = $('#sosp-m').value.trim(); S.sospAsk = false; modifica(id, {azione: {tipo: 'sospendi', motivo: m}}); break; }
@@ -430,6 +507,19 @@ document.addEventListener('click', async e => {
     case 'chiudi-segreto': S.segreto = null; renderUtenti(); break;
   }
 });
+function wiz(az, i) {
+  const p = S.det; if (!p && az !== 'elenco') return;
+  switch (az) {
+    case 'si': case 'so': rispondi(az, i); return;
+    case 'spiega': case 'vai': rispondi(az, i).then(vediFase); return;
+    case 'prev': { const lst = TIPI[p.tipo].check[p.fase]; let idx = S.wizIdx ?? lst.findIndex(it => statoVoce(p, it) === 'aperto'); if (idx < 0) idx = lst.length; S.wizIdx = Math.max(0, idx - 1); S.wizSpiega = false; break; }
+    case 'riep': S.wizRiep = true; S.wizSpiega = false; break;
+    case 'domande': S.wizRiep = false; S.wizIdx = null; S.wizSpiega = false; break;
+    case 'elenco': S.modo = 'elenco'; S.wizSpiega = false; break;
+    case 'guida': S.modo = 'guida'; S.wizRiep = false; S.wizIdx = null; break;
+  }
+  renderDrawer(false);
+}
 async function utente(id, body, titolo) {
   try {
     const r = await api('PATCH', '/api/utenti/' + id, body);

@@ -22,7 +22,7 @@
     const ck = (ids, uid, giorniFa) => Object.fromEntries(ids.map(i => [i, {ok: true, by: uid, at: now() - giorniFa * 864e5}]));
     const P = [
       {tipo: 'beni', fase: 0, assegnatario: 2, oggetto: 'Fornitura di carta e materiale di cancelleria', beneficiario: 'Cartoleria di prova S.r.l.', importo: 1830, iva: 330, capitolo: '1234 pg 1', check: ck(['b_det', 'b_cig', 'b_cop'], 2, 3)},
-      {tipo: 'beni', fase: 1, assegnatario: 1, oggetto: 'Fornitura di toner per le stampanti della Direzione', beneficiario: 'Forniture d\'ufficio di prova S.p.A.', importo: 2440, iva: 440, capitolo: '1234 pg 2', cig: 'Z0000PROVA', impegno: '1001', fattura: 'FE-118', dataRicezione: giorni(-12), check: ck(['b_det', 'b_cig', 'b_cop', 'b_imp', 'b_ord', 'b_fat', 'b_ctr'], 1, 10)},
+      {tipo: 'beni', fase: 1, assegnatario: 1, oggetto: 'Fornitura di toner per le stampanti della Direzione', beneficiario: 'Forniture d\'ufficio di prova S.p.A.', importo: 2440, iva: 440, capitolo: '1234 pg 2', cig: 'Z0000PROVA', impegno: '1001', fattura: 'FE-118', dataRicezione: giorni(-12), check: ck(['b_det', 'b_cig', 'b_cop', 'b_imp', 'b_ord', 'b_fat'], 1, 10), dafare: {b_ctr: {by: 1, at: now() - 2 * 864e5}}},
       {tipo: 'beni', fase: 2, assegnatario: 2, oggetto: 'Manutenzione dell\'impianto di climatizzazione', beneficiario: 'Impianti tecnici di prova S.r.l.', importo: 6100, iva: 1100, capitolo: '1250 pg 1', cig: 'B0000PROVA', impegno: '1002', fattura: '45/PA', dataRicezione: giorni(-27), check: ck(['b_det', 'b_cig', 'b_cop', 'b_imp', 'b_ord', 'b_fat', 'b_acc', 'b_ctr', 'b_reg', 'b_durc', 'b_48b', 'b_liq', 'b_pcc'], 2, 6)},
       {tipo: 'beni', fase: 1, assegnatario: 2, sospesa: true, motivoSospensione: 'DURC irregolare: chiesta regolarizzazione al fornitore', oggetto: 'Servizio di pulizia straordinaria dei locali', beneficiario: 'Servizi integrati di prova Soc. Coop.', importo: 3904, iva: 704, capitolo: '1250 pg 3', cig: 'Z1111PROVA', impegno: '1003', dataRicezione: giorni(-20), check: ck(['b_det', 'b_cig', 'b_cop', 'b_imp', 'b_ord', 'b_fat', 'b_acc', 'b_ctr', 'b_reg'], 2, 8)},
       {tipo: 'legali', fase: 1, assegnatario: 1, oggetto: 'Spese di lite liquidate con sentenza del TAR (caso di prova)', beneficiario: 'Avv. di prova, distrattario', importo: 3172, iva: 572, titolo: 'Sentenza di prova n. 0000/2026', rg: '0000/2025', dataNotifica: giorni(-130), capitolo: '1290 pg 1', check: ck(['l_tit', 'l_avv', 'l_qnt', 'l_cap', 'l_ben', 'l_doc'], 1, 40)},
@@ -33,7 +33,7 @@
     P.forEach((p, i) => {
       const id = 'pdemo' + String(i).padStart(7, '0');
       const creata = now() - (45 - i * 4) * 864e5;
-      pratiche.set(id, Object.assign({check: {}, sospesa: false, motivoSospensione: '', esempio: true, esercizio: anno, creatoDa: p.assegnatario, creata, aggiornata: now() - (8 - i) * 36e5}, p));
+      pratiche.set(id, Object.assign({check: {}, dafare: {}, sospesa: false, motivoSospensione: '', esempio: true, esercizio: anno, creatoDa: p.assegnatario, creata, aggiornata: now() - (8 - i) * 36e5}, p));
       ev(p.assegnatario, id, 'Pratica creata', creata);
       Object.keys(p.check).forEach(k => ev(p.check[k].by, id, 'Completato: ' + VOCI[p.tipo][k].t, p.check[k].at));
       for (let f = 1; f <= Math.min(p.fase, M.FASI.length); f++) ev(p.assegnatario, id, f >= M.FASI.length ? 'Pratica conclusa' : 'Passata alla fase ' + M.FASI[f].n, creata + f * 3 * 864e5);
@@ -132,8 +132,14 @@
       }
       for (const [i, on] of Object.entries(b.check || {})) {
         const v = VOCI[d.tipo][i]; if (!v) throw new E(400, 'Adempimento sconosciuto.');
-        if (on && !d.check[i]) { d.check[i] = {ok: true, by: me.id, at: now()}; msgs.push('Completato: ' + v.t); }
+        if (on && !d.check[i]) { d.check[i] = {ok: true, by: me.id, at: now()}; if (d.dafare) delete d.dafare[i]; msgs.push('Completato: ' + v.t); }
         else if (!on && d.check[i]) { delete d.check[i]; msgs.push('Riaperto: ' + v.t); }
+      }
+      for (const [i, on] of Object.entries(b.dafare || {})) {
+        const v = VOCI[d.tipo][i]; if (!v) throw new E(400, 'Adempimento sconosciuto.');
+        d.dafare = d.dafare || {};
+        if (on && !d.dafare[i] && !d.check[i]) { d.dafare[i] = {by: me.id, at: now()}; msgs.push('Da fare: ' + v.t); }
+        else if (!on && d.dafare[i]) { delete d.dafare[i]; msgs.push('Tolto dalle cose da fare: ' + v.t); }
       }
       if (b.azione) msgs.push(azione(me, d, b.azione));
       if (msgs.length) { d.aggiornata = now(); pratiche.set(m[1], d); msgs.forEach(x => ev(me.id, m[1], x)); rev++; }
