@@ -20,7 +20,7 @@
  "TIPI": {
   "beni": {
    "n": "Beni e servizi",
-   "s": "Forniture e servizi con fattura elettronica",
+   "s": "Fatture commerciali di forniture e servizi (fattura elettronica)",
    "check": [
     [
      {
@@ -1197,10 +1197,281 @@
      ]
     }
    ]
+  },
+  "rimborsi": {
+   "n": "Rimborsi di missione",
+   "s": "Missioni del personale: rimborso delle spese documentate",
+   "check": [
+    [
+     {
+      "id": "r_aut",
+      "t": "Missione autorizzata dal dirigente competente prima della partenza",
+      "r": 1,
+      "aiuto": {
+       "cosa": "La missione deve essere autorizzata prima di essere svolta: l'autorizzazione indica chi parte, dove, quando, per quale motivo e con quale mezzo. Senza autorizzazione preventiva le spese non sono di norma rimborsabili.",
+       "passi": [
+        "Il dipendente presenta la richiesta di missione con destinazione, date, motivo e mezzo di trasporto.",
+        "Il dirigente verifica l'interesse dell'amministrazione e autorizza, anche con firma digitale.",
+        "Se è previsto l'uso del mezzo proprio o di un mezzo straordinario (taxi, auto a noleggio), l'autorizzazione deve dirlo espressamente e indicarne le ragioni.",
+        "Registra nei dati della pratica destinazione, motivo e date della missione."
+       ],
+       "dove": "Modulistica e sistema di protocollo dell'amministrazione.",
+       "attenzione": "Per il personale contrattualizzato l'uso del mezzo proprio non dà diritto al rimborso chilometrico (art. 6, comma 12, DL 78/2010), salvo i casi e le modalità indicati dalle istruzioni dell'amministrazione e dalla circolare RGS n. 36/2010."
+      }
+     },
+     {
+      "id": "r_cop",
+      "t": "Copertura verificata sul capitolo delle spese di missione",
+      "r": 1,
+      "aiuto": {
+       "cosa": "Il rimborso grava sul capitolo e sul piano gestionale destinati alle missioni: prima di autorizzare va verificato che ci siano fondi sufficienti.",
+       "passi": [
+        "Individua capitolo e piano gestionale delle missioni della Direzione.",
+        "Verifica la disponibilità per l'esercizio in cui si pagherà il rimborso.",
+        "Se i fondi non bastano, segnalalo prima della missione all'ufficio che gestisce il bilancio della Direzione."
+       ],
+       "dove": "Sistema contabile in uso (InIt o SICOGE).",
+       "attenzione": "Le spese per missioni sono soggette a limiti di spesa stabiliti dalle norme di contenimento: tieni conto delle indicazioni dell'ufficio bilancio."
+      }
+     },
+     {
+      "id": "r_ant",
+      "t": "Anticipo di missione richiesto e corrisposto, se previsto",
+      "r": 0,
+      "aiuto": {
+       "cosa": "Per le missioni più onerose il dipendente può chiedere un anticipo sulle spese, secondo le regole dell'amministrazione.",
+       "passi": [
+        "Verifica se le istruzioni interne prevedono l'anticipo e in che misura.",
+        "Acquisisci la richiesta del dipendente con la stima delle spese.",
+        "Registra l'importo anticipato nelle note: andrà detratto dal rimborso finale."
+       ],
+       "attenzione": "Se la missione non si svolge, l'anticipo va restituito."
+      }
+     }
+    ],
+    [
+     {
+      "id": "r_ric",
+      "t": "Richiesta di rimborso presentata con i giustificativi",
+      "r": 1,
+      "aiuto": {
+       "cosa": "Al rientro il dipendente presenta la richiesta di rimborso con i documenti che provano le spese sostenute.",
+       "passi": [
+        "Acquisisci la richiesta firmata con il riepilogo delle spese.",
+        "Verifica che ci siano i giustificativi: biglietti e carte d'imbarco, ricevute o fatture di albergo e ristorante, ricevute dei mezzi pubblici e del taxi.",
+        "Controlla che date e luoghi corrispondano alla missione autorizzata."
+       ],
+       "attenzione": "Le ricevute fiscali e le fatture devono essere intestate al dipendente o all'amministrazione secondo le istruzioni interne. Le spese senza documento non sono di norma rimborsabili."
+      }
+     },
+     {
+      "id": "r_ver",
+      "t": "Spese verificate rispetto alle regole sulle missioni e ai limiti",
+      "r": 1,
+      "aiuto": {
+       "cosa": "Si controlla che ogni spesa sia rimborsabile e rientri nei limiti previsti.",
+       "passi": [
+        "Viaggio: verifica la classe e il mezzo autorizzati.",
+        "Vitto e alloggio: verifica i limiti per pasto e la categoria dell'albergo previsti dal contratto collettivo e dalle istruzioni dell'amministrazione.",
+        "Per le missioni all'estero applica le regole specifiche, tra cui il DM 23 marzo 2011 sui limiti di vitto e alloggio.",
+        "Escludi le spese non rimborsabili e annota il motivo."
+       ],
+       "attenzione": "Per le missioni in Italia l'indennità di trasferta (diaria) non è più dovuta ai dipendenti statali: si rimborsano le spese documentate (art. 1, comma 213, L. 266/2005)."
+      }
+     },
+     {
+      "id": "r_fis",
+      "t": "Trattamento fiscale e previdenziale delle somme determinato",
+      "r": 1,
+      "aiuto": {
+       "cosa": "Non tutte le somme rimborsate hanno lo stesso trattamento fiscale: dipende dal luogo della missione e dal tipo di rimborso.",
+       "passi": [
+        "Missione fuori dal comune della sede di lavoro: i rimborsi analitici documentati di viaggio, vitto e alloggio non concorrono al reddito (art. 51, comma 5, TUIR).",
+        "Missione nel comune della sede di lavoro: i rimborsi concorrono al reddito, salvo quelli delle spese di trasporto documentate dal vettore.",
+        "Indica nell'atto di liquidazione quali somme sono esenti e quali imponibili."
+       ],
+       "attenzione": "Nei casi dubbi confrontati con l'ufficio che cura gli adempimenti del sostituto d'imposta."
+      }
+     },
+     {
+      "id": "r_liq",
+      "t": "Importo da rimborsare determinato e atto di liquidazione firmato",
+      "r": 1,
+      "aiuto": {
+       "cosa": "L'atto di liquidazione fissa l'importo spettante al dipendente.",
+       "passi": [
+        "Somma le spese ammesse e sottrai l'eventuale anticipo già corrisposto.",
+        "Richiama l'autorizzazione alla missione e il capitolo di spesa.",
+        "Indica il canale di pagamento: cedolino NoiPA oppure titolo di pagamento diretto.",
+        "Fai firmare l'atto dal dirigente e protocollalo."
+       ]
+      }
+     }
+    ],
+    [
+     {
+      "id": "r_can",
+      "t": "Canale di pagamento individuato: cedolino NoiPA o titolo diretto",
+      "r": 1,
+      "aiuto": {
+       "cosa": "Il rimborso può essere pagato con il cedolino NoiPA del dipendente, come voce accessoria, oppure con un titolo di pagamento emesso dal sistema contabile. Quale canale si usa dipende dall'organizzazione dell'amministrazione.",
+       "passi": [
+        "Verifica con l'ufficio bilancio o con l'ufficio del personale qual è il canale previsto per i rimborsi di missione della Direzione.",
+        "Indica il canale nei dati della pratica, con la casella «Pagamento tramite cedolino NoiPA».",
+        "Segui le sottofasi successive per il canale scelto."
+       ],
+       "attenzione": "Una volta individuato il canale, conviene annotarlo nella Guida o nelle note per le pratiche successive."
+      }
+     },
+     {
+      "id": "r_reg",
+      "t": "Rimborso inserito in NoiPA oppure titolo di pagamento emesso",
+      "r": 1,
+      "aiuto": {
+       "cosa": "A seconda del canale, il rimborso si inserisce nel cedolino o si emette il titolo.",
+       "passi": [
+        "Cedolino NoiPA: inserisci la voce di rimborso con le funzioni abilitate, rispettando la scadenza mensile di chiusura delle variazioni.",
+        "Titolo diretto: emetti l'ordine di pagamento a favore del dipendente sul capitolo delle missioni, con IBAN e causale.",
+        "Registra nei dati il numero del titolo o il mese del cedolino."
+       ],
+       "dove": "NoiPA, con le funzioni abilitate per l'ufficio; oppure sistema contabile in uso, se si paga con titolo diretto.",
+       "attenzione": "Con il cedolino il rimborso arriva solo con la mensilità in cui è stato inserito: tienine conto per i tempi."
+      }
+     },
+     {
+      "id": "r_ucb",
+      "t": "Controllo dell'Ufficio centrale di bilancio superato (solo con titolo diretto)",
+      "r": 0,
+      "aiuto": {
+       "cosa": "Se il rimborso è pagato con titolo diretto, il titolo passa al controllo di regolarità amministrativa e contabile dell'Ufficio centrale di bilancio (D.Lgs. 123/2011).",
+       "passi": [
+        "Verifica nel sistema contabile lo stato del controllo.",
+        "Se arrivano osservazioni, rispondi o correggi e ritrasmetti."
+       ],
+       "dove": "Sistema contabile in uso (InIt o SICOGE)."
+      }
+     }
+    ],
+    [
+     {
+      "id": "r_pag",
+      "t": "Rimborso accreditato al dipendente, con estremi registrati",
+      "r": 1,
+      "aiuto": {
+       "cosa": "Il rimborso è accreditato con il cedolino o con bonifico.",
+       "passi": [
+        "Verifica l'accredito: nel cedolino del mese previsto oppure nello stato «pagato» del titolo.",
+        "Annota data di pagamento ed estremi nei dati della pratica."
+       ]
+      }
+     },
+     {
+      "id": "r_tra",
+      "t": "Importo pubblicato in Amministrazione trasparente, se il dipendente è un dirigente",
+      "r": 0,
+      "aiuto": {
+       "cosa": "Per i titolari di incarichi dirigenziali vanno pubblicati gli importi di viaggi di servizio e missioni pagati con fondi pubblici (art. 14 D.Lgs. 33/2013).",
+       "passi": [
+        "Verifica se il dipendente è titolare di incarico dirigenziale.",
+        "Comunica l'importo a chi cura la pubblicazione nella sezione Amministrazione trasparente."
+       ],
+       "attenzione": "Per dubbi sugli obblighi di pubblicazione rivolgiti al Responsabile della prevenzione della corruzione e della trasparenza."
+      }
+     },
+     {
+      "id": "r_arc",
+      "t": "Fascicolo archiviato",
+      "r": 1,
+      "aiuto": {
+       "cosa": "Chiudere il fascicolo significa conservare tutti gli atti del rimborso.",
+       "passi": [
+        "Raccogli autorizzazione, richiesta, giustificativi, atto di liquidazione e prova del pagamento.",
+        "Archivia secondo le regole di conservazione dell'amministrazione."
+       ]
+      }
+     }
+    ]
+   ],
+   "intro": [
+    {
+     "come": "La missione va autorizzata prima di partire: si verifica l'interesse dell'amministrazione, il mezzo di trasporto e la copertura sul capitolo delle missioni. Se previsto, si può corrispondere un anticipo.",
+     "chi": [
+      "Dipendente: chiede l'autorizzazione",
+      "Dirigente: autorizza la missione",
+      "Ufficio: verifica la copertura e registra"
+     ],
+     "entrata": [
+      "Richiesta di missione con destinazione, date, motivo e mezzo"
+     ],
+     "uscita": [
+      "Autorizzazione alla missione",
+      "Eventuale anticipo"
+     ],
+     "tempi": [
+      "L'autorizzazione deve precedere la missione."
+     ]
+    },
+    {
+     "come": "Al rientro il dipendente presenta la richiesta di rimborso con i giustificativi. Si controlla che ogni spesa sia ammessa e nei limiti, si determina il trattamento fiscale e si adotta l'atto di liquidazione.",
+     "chi": [
+      "Dipendente: presenta richiesta e giustificativi",
+      "Ufficio: verifica spese, limiti e trattamento fiscale",
+      "Dirigente: firma l'atto di liquidazione"
+     ],
+     "entrata": [
+      "Autorizzazione alla missione",
+      "Richiesta di rimborso",
+      "Giustificativi di spesa"
+     ],
+     "uscita": [
+      "Prospetto delle spese ammesse ed escluse",
+      "Atto di liquidazione"
+     ],
+     "tempi": [
+      "Rispetta il termine per la presentazione della richiesta fissato dalle istruzioni interne, se previsto.",
+      "Diversamente dalle fatture commerciali, il rimborso non ha il termine di 30 giorni del D.Lgs. 231/2002: indica una scadenza nei dati se l'amministrazione se ne è data una."
+     ]
+    },
+    {
+     "come": "Si sceglie il canale di pagamento e si procede di conseguenza: inserimento del rimborso nel cedolino NoiPA oppure emissione del titolo di pagamento, che in questo caso passa al controllo dell'Ufficio centrale di bilancio.",
+     "chi": [
+      "Ufficio: inserisce il rimborso in NoiPA o emette il titolo",
+      "Dirigente: firma il titolo",
+      "Ufficio centrale di bilancio: controlla il titolo, se il pagamento è diretto"
+     ],
+     "entrata": [
+      "Atto di liquidazione"
+     ],
+     "uscita": [
+      "Voce di rimborso nel cedolino, oppure titolo di pagamento"
+     ],
+     "tempi": [
+      "Con NoiPA conta la data di chiusura mensile delle variazioni: oltre quella data il rimborso slitta al mese successivo."
+     ]
+    },
+    {
+     "come": "Si verifica l'accredito, si curano le eventuali pubblicazioni per i dirigenti e si archivia il fascicolo.",
+     "chi": [
+      "NoiPA o tesoreria: accreditano il rimborso",
+      "Ufficio: registra, comunica per la trasparenza e archivia"
+     ],
+     "entrata": [
+      "Cedolino o titolo pagato"
+     ],
+     "uscita": [
+      "Estremi del pagamento",
+      "Fascicolo archiviato"
+     ],
+     "tempi": [
+      "Nessun termine di legge generale."
+     ]
+    }
+   ]
   }
  },
  "ORDINE_TIPI": [
   "beni",
+  "rimborsi",
   "legali",
   "compensi",
   "altro"
@@ -1218,7 +1489,8 @@
   {
    "k": "beneficiario",
    "l": "Beneficiario",
-   "t": "text"
+   "t": "text",
+   "h": "Per i rimborsi di missione: il dipendente"
   },
   {
    "k": "cfpiva",
@@ -1280,6 +1552,40 @@
     "legali"
    ],
    "h": "Avvia il termine di 120 giorni"
+  },
+  {
+   "k": "missione",
+   "l": "Destinazione e motivo della missione",
+   "t": "text",
+   "tipi": [
+    "rimborsi"
+   ],
+   "full": 1
+  },
+  {
+   "k": "dataInizio",
+   "l": "Inizio della missione",
+   "t": "date",
+   "tipi": [
+    "rimborsi"
+   ]
+  },
+  {
+   "k": "dataFine",
+   "l": "Fine della missione",
+   "t": "date",
+   "tipi": [
+    "rimborsi"
+   ]
+  },
+  {
+   "k": "noipa",
+   "l": "Pagamento tramite cedolino NoiPA (altrimenti titolo di pagamento diretto)",
+   "t": "check",
+   "tipi": [
+    "rimborsi"
+   ],
+   "full": 1
   },
   {
    "sub": "Bilancio"
