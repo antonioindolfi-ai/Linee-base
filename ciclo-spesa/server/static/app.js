@@ -136,13 +136,14 @@ function perUrgenza(a, b) { const ra = residuo(a), rb = residuo(b); if (ra == nu
 
 /* ---------------- viste ---------------- */
 function renderCruscotto() {
-  const el = $('#v-cruscotto'); const ap = aperte();
+  const el = $('#v-cruscotto'); const ct = S.ctipo || ''; const perTipo = p => !ct || p.tipo === ct; const ap = aperte().filter(perTipo);
   const scadute = ap.filter(p => { const r = residuo(p); return r != null && r < 0; });
   const insc = ap.filter(p => { const r = residuo(p); return r != null && r >= 0 && r <= 7; });
   const sosp = ap.filter(p => p.sospesa);
   const anno = String(new Date().getFullYear());
-  const concl = [...S.pratiche.values()].filter(p => (p.fase ?? 0) >= CONCLUSA && String(p.esercizio || '') === anno);
+  const concl = [...S.pratiche.values()].filter(p => perTipo(p) && (p.fase ?? 0) >= CONCLUSA && String(p.esercizio || '') === anno);
   let h = `<div class="section-h"><h2>Cruscotto</h2><p>Pratiche aperte per fase. Apri una scheda per spuntare gli adempimenti e far avanzare la pratica.</p></div>
+  ${S.pratiche.size ? `<div class="ctipi" role="group" aria-label="Mostra per tipologia"><span class="mut sm">Mostra:</span>${[['', 'Tutte'], ...ALL.map(k => [k, k === 'beni' ? 'Fatture commerciali' : TIPI[k].n])].map(([k, n]) => `<button type="button" class="btn btn-sm ${ct === k ? 'btn-primary' : 'btn-outline-primary'}" data-ctipo="${k}" aria-pressed="${ct === k}">${esc(n)}</button>`).join('')}</div>` : ''}
   <div class="stats">
     <button class="stat" data-goto="aperte"><span class="lbl">Aperte</span><span class="val num">${ap.length}</span><span class="sub num">${eur(somma(ap))}</span></button>
     <button class="stat ${scadute.length ? 'bad' : ''}" data-goto="scadute"><span class="lbl">Scadute</span><span class="val num">${scadute.length}</span><span class="sub">termine superato</span></button>
@@ -561,13 +562,14 @@ function csv() {
 }
 
 document.addEventListener('click', async e => {
-  const t = e.target.closest('[data-open],[data-act],[data-vf],[data-goto],[data-attiva],[data-reset],[data-wiz],[data-appr],[data-ap]'); if (!t) return;
+  const t = e.target.closest('[data-open],[data-act],[data-vf],[data-goto],[data-attiva],[data-reset],[data-wiz],[data-appr],[data-ap],[data-ctipo]'); if (!t) return;
+  if (t.dataset.ctipo != null) { S.ctipo = t.dataset.ctipo; renderCruscotto(); return; }
   if (t.dataset.wiz) { wiz(t.dataset.wiz, t.dataset.i != null ? +t.dataset.i : null); return; }
   if (t.dataset.appr) { e.preventDefault(); const [f, i] = t.dataset.appr.split(':').map(Number); apriAppr(f, i); return; }
   if (t.dataset.ap) { e.preventDefault(); azioneAppr(t.dataset.ap); return; }
   if (t.dataset.open) { openDrawer(t.dataset.open); return; }
   if (t.dataset.vf != null) { S.viewFase = +t.dataset.vf; S.advWarn = false; const f = S.det?.fase ?? 0; S.modo = (S.viewFase === Math.min(f, 3) && f < CONCLUSA) ? 'guida' : 'elenco'; S.wizSpiega = false; renderDrawer(false); return; }
-  if (t.dataset.goto) { const g = t.dataset.goto; S.f = {...S.f, fase: g === 'concluse' ? String(CONCLUSA) : 'aperte', stato: ['scadute', 'inscadenza', 'sospese'].includes(g) ? g : '', eserc: g === 'concluse' ? String(new Date().getFullYear()) : ''}; location.hash = 'pratiche'; return; }
+  if (t.dataset.goto) { const g = t.dataset.goto; S.f = {...S.f, tipo: S.ctipo || '', fase: g === 'concluse' ? String(CONCLUSA) : 'aperte', stato: ['scadute', 'inscadenza', 'sospese'].includes(g) ? g : '', eserc: g === 'concluse' ? String(new Date().getFullYear()) : ''}; location.hash = 'pratiche'; return; }
   if (t.dataset.attiva) { utente(+t.dataset.attiva, {attivo: t.dataset.val === '1'}); return; }
   if (t.dataset.reset) { const u = S.utenti.get(+t.dataset.reset); utente(u.id, {reimposta_password: true}, 'Nuova password provvisoria per ' + u.nome); return; }
   const id = S.open, p = S.det;

@@ -281,3 +281,6 @@ details.voce summary em{font-style:normal;color:var(--muted);font-size:.85em}
 /* salta fase */
 .salta{margin-top:14px;padding-top:12px;border-top:1px dashed var(--line)}
 .salta p{margin:0 0 8px;font-size:.9rem}
+/* filtro per tipologia nel cruscotto */
+.ctipi{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:-4px 0 16px}
+.ctipi .btn{padding:4px 12px}
