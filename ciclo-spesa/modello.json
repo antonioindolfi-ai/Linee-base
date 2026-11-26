@@ -27,126 +27,334 @@
       "id": "b_det",
       "t": "Determina o decisione a contrarre adottata",
       "r": 1,
-      "ref": "art. 17 D.Lgs. 36/2023"
+      "ref": "art. 17 D.Lgs. 36/2023",
+      "aiuto": {
+       "cosa": "È l'atto con cui decidi di acquistare: individua gli elementi essenziali del contratto e il modo in cui scegli il fornitore (art. 17 D.Lgs. 36/2023). Senza questo atto l'affidamento non può partire.",
+       "passi": [
+        "Verifica il fabbisogno e gli strumenti Consip: le amministrazioni statali devono usare le convenzioni attive (art. 1, comma 449, L. 296/2006) e il MePA per gli acquisti da 5.000 € fino alla soglia europea (comma 450).",
+        "Individua il responsabile unico del progetto, RUP (art. 15 D.Lgs. 36/2023).",
+        "Redigi la determina: oggetto, importo, procedura (per esempio affidamento diretto nei limiti dell'art. 50), operatore scelto e ragioni della scelta, copertura finanziaria.",
+        "Fai firmare la determina dal dirigente e protocollala."
+       ],
+       "dove": "Sistema di protocollo e gestione documentale.",
+       "attenzione": "Per l'affidamento diretto l'atto può essere semplificato, ma deve comunque indicare oggetto, importo, affidatario, ragioni della scelta e possesso dei requisiti (art. 17, comma 2)."
+      }
      },
      {
       "id": "b_cig",
       "t": "CIG acquisito",
       "r": 1,
-      "ref": "tracciabilità, art. 3 L. 136/2010"
+      "ref": "tracciabilità, art. 3 L. 136/2010",
+      "aiuto": {
+       "cosa": "Il Codice identificativo di gara identifica l'affidamento ai fini della tracciabilità dei flussi finanziari e dei controlli dell'ANAC.",
+       "passi": [
+        "Dal 1° gennaio 2024 il CIG si acquisisce tramite la piattaforma di approvvigionamento digitale con cui svolgi l'affidamento (per esempio il MePA), collegata alla Banca dati nazionale dei contratti pubblici dell'ANAC.",
+        "Compila la scheda richiesta dalla piattaforma: oggetto, importo, procedura, RUP.",
+        "Riporta il CIG in determina, ordine o contratto e comunicalo al fornitore, che deve indicarlo in fattura."
+       ],
+       "dove": "Piattaforma di approvvigionamento (per esempio acquistinretepa.it); per i casi residuali, l'interfaccia web messa a disposizione dall'ANAC.",
+       "attenzione": "Le fatture senza CIG non possono essere pagate (art. 25 DL 66/2014)."
+      }
      },
      {
       "id": "b_cup",
       "t": "CUP acquisito, se la spesa rientra in un progetto di investimento pubblico",
-      "r": 0
+      "r": 0,
+      "aiuto": {
+       "cosa": "Il Codice unico di progetto è obbligatorio per ogni progetto di investimento pubblico (art. 11 L. 3/2003). Non serve per le spese di funzionamento ordinario, come cancelleria o manutenzioni ordinarie.",
+       "passi": [
+        "Verifica se la spesa fa parte di un progetto di investimento pubblico (per esempio lavori, attrezzature finanziate in conto capitale, interventi PNRR).",
+        "In caso affermativo richiedi il CUP sul sistema CUP o fallo richiedere al soggetto titolare del progetto.",
+        "Riportalo in determina e ordine e comunicalo al fornitore per la fattura."
+       ],
+       "dove": "Sistema CUP del Dipartimento per la programmazione e il coordinamento della politica economica (DIPE) della Presidenza del Consiglio.",
+       "attenzione": "Gli atti che finanziano o autorizzano progetti di investimento pubblico senza CUP sono nulli (art. 11, comma 2-bis, L. 3/2003)."
+      }
      },
      {
       "id": "b_cop",
       "t": "Copertura verificata sul capitolo / piano gestionale",
-      "r": 1
+      "r": 1,
+      "aiuto": {
+       "cosa": "Prima di assumere l'obbligazione devi accertare che sul capitolo e sul piano gestionale ci siano fondi sufficienti per l'esercizio in cui la spesa sarà esigibile.",
+       "passi": [
+        "Individua il capitolo e il piano gestionale coerenti con la natura della spesa (corrente o in conto capitale).",
+        "Controlla nel sistema contabile la disponibilità di competenza e, per l'anno del pagamento, di cassa.",
+        "Se la spesa si distribuisce su più esercizi, predisponi il cronoprogramma."
+       ],
+       "dove": "Sistema contabile in uso (InIt o SICOGE).",
+       "attenzione": "Se la disponibilità non basta, segnalalo subito all'ufficio che gestisce il bilancio della Direzione per una variazione o una rimodulazione."
+      }
      },
      {
       "id": "b_imp",
       "t": "Impegno di spesa registrato nel sistema contabile",
       "r": 1,
-      "ref": "art. 34 L. 196/2009"
+      "ref": "art. 34 L. 196/2009",
+      "aiuto": {
+       "cosa": "L'impegno vincola le somme sul bilancio a favore del creditore. Si assume quando l'obbligazione è giuridicamente perfezionata e si imputa all'esercizio in cui diventa esigibile (art. 34 L. 196/2009).",
+       "passi": [
+        "Predisponi il decreto di impegno nel sistema contabile indicando creditore, importo, capitolo e piano gestionale, esercizio di esigibilità ed eventuali CIG e CUP.",
+        "Allega l'atto da cui nasce l'obbligazione (determina e contratto, provvedimento di nomina, titolo giudiziale).",
+        "Firma digitalmente e trasmetti all'Ufficio centrale di bilancio per il controllo preventivo di regolarità amministrativa e contabile (D.Lgs. 123/2011).",
+        "Registra il numero di impegno nei dati della pratica."
+       ],
+       "dove": "Sistema contabile in uso (InIt o SICOGE).",
+       "attenzione": "Gli impegni si assumono nei limiti degli stanziamenti. Se il pagamento cadrà in più esercizi, prevedi il cronoprogramma (impegno pluriennale ad esigibilità)."
+      }
      },
      {
       "id": "b_ord",
       "t": "Ordine o contratto trasmesso al fornitore (MePA o altro canale)",
-      "r": 1
+      "r": 1,
+      "aiuto": {
+       "cosa": "Con l'ordine o la stipula del contratto l'obbligazione con il fornitore diventa vincolante.",
+       "passi": [
+        "Sul MePA: emetti l'ordine diretto oppure concludi la trattativa diretta e stipula a sistema con firma digitale.",
+        "Fuori dal MePA, per gli affidamenti diretti il contratto si stipula per corrispondenza commerciale, anche via PEC (art. 18, comma 1, D.Lgs. 36/2023).",
+        "Nell'ordine indica CIG, eventuale CUP, codice univoco ufficio per la fattura elettronica, termini di consegna e di pagamento."
+       ],
+       "dove": "acquistinretepa.it (MePA) oppure PEC istituzionale.",
+       "attenzione": "Per i contratti di importo superiore a 40.000 € è dovuta l'imposta di bollo secondo la tabella dell'allegato I.4 del Codice dei contratti."
+      }
      },
      {
       "id": "b_ccd",
       "t": "Dichiarazione del conto corrente dedicato acquisita",
       "r": 0,
-      "ref": "art. 3 L. 136/2010"
+      "ref": "art. 3 L. 136/2010",
+      "aiuto": {
+       "cosa": "Il fornitore deve comunicarti il conto corrente dedicato, anche in via non esclusiva, alle commesse pubbliche e le persone autorizzate a operare su di esso (art. 3, comma 7, L. 136/2010).",
+       "passi": [
+        "Chiedi al fornitore la dichiarazione sul conto corrente dedicato.",
+        "Verifica che contenga IBAN, generalità e codice fiscale delle persone delegate a operare.",
+        "Conserva la dichiarazione nel fascicolo e paga solo su quel conto."
+       ],
+       "attenzione": "La comunicazione va fatta entro 7 giorni dall'accensione del conto o dal suo primo utilizzo per commesse pubbliche, e va aggiornata a ogni variazione."
+      }
      }
     ],
     [
      {
       "id": "b_fat",
       "t": "Fattura elettronica ricevuta tramite SdI (data di ricezione registrata nei dati)",
-      "r": 1
+      "r": 1,
+      "aiuto": {
+       "cosa": "Alla pubblica amministrazione si fattura solo in forma elettronica tramite il Sistema di Interscambio (SdI). Senza fattura elettronica non si può pagare, nemmeno in parte (art. 1, comma 210, L. 244/2007).",
+       "passi": [
+        "Verifica che la fattura sia arrivata sul codice univoco ufficio indicato nell'ordine.",
+        "Registra la data di ricezione su SdI nei dati della pratica: da lì decorrono i termini di 15 e di 30 giorni.",
+        "Collega la fattura all'impegno nel sistema contabile."
+       ],
+       "dove": "Sistema contabile in uso, sezione fatture passive. Il codice univoco ufficio è quello pubblicato sull'Indice dei domicili digitali delle pubbliche amministrazioni (IPA)."
+      }
      },
      {
       "id": "b_acc",
       "t": "Fattura accettata, oppure rifiutata con motivazione, entro 15 giorni",
       "r": 0,
-      "ref": "rifiuto solo nei casi del DM MEF 132/2020"
+      "ref": "rifiuto solo nei casi del DM MEF 132/2020",
+      "aiuto": {
+       "cosa": "Hai 15 giorni dalla ricezione per comunicare tramite SdI l'accettazione o il rifiuto della fattura. Trascorso il termine, SdI invia la notifica di decorrenza termini e il rifiuto non è più possibile.",
+       "passi": [
+        "Controlla intestazione, oggetto, importi, aliquota ed esigibilità IVA (scissione dei pagamenti), CIG e CUP.",
+        "Se la fattura è corretta, accettala nel sistema contabile.",
+        "Se rientra in un caso di rifiuto, rifiutala motivando: il fornitore dovrà emettere una nuova fattura."
+       ],
+       "dove": "Sistema contabile in uso, sezione fatture passive.",
+       "attenzione": "Il rifiuto è ammesso solo nei casi del DM MEF 24 agosto 2020, n. 132, tra cui operazione non riferibile all'amministrazione e CIG o CUP mancanti o errati. Gli errori correggibili con una nota di variazione non giustificano il rifiuto: si chiede la nota di credito."
+      }
      },
      {
       "id": "b_ctr",
       "t": "Controllati in fattura CIG, CUP e codice univoco ufficio",
       "r": 1,
-      "ref": "art. 25 DL 66/2014"
+      "ref": "art. 25 DL 66/2014",
+      "aiuto": {
+       "cosa": "Le fatture che non riportano il CIG e, quando previsto, il CUP non possono essere pagate (art. 25, comma 3, DL 66/2014).",
+       "passi": [
+        "Confronta CIG e CUP della fattura con quelli di determina e ordine.",
+        "Verifica che il codice univoco ufficio sia quello corretto.",
+        "Se i codici mancano o sono errati, rifiuta la fattura entro 15 giorni dalla ricezione."
+       ]
+      }
      },
      {
       "id": "b_reg",
       "t": "Verifica di conformità / attestazione di regolare esecuzione",
-      "r": 1
+      "r": 1,
+      "aiuto": {
+       "cosa": "Prima di liquidare devi attestare che la fornitura o il servizio è stato eseguito in modo conforme al contratto.",
+       "passi": [
+        "Il RUP o il direttore dell'esecuzione verifica quantità, qualità e tempi della prestazione.",
+        "Redigi il certificato di verifica di conformità o, nei casi ammessi, l'attestazione di regolare esecuzione (art. 116 e allegato II.14 D.Lgs. 36/2023).",
+        "Se la verifica si conclude dopo la ricezione della fattura, registrane la data nei dati della pratica: il termine di pagamento decorre da lì."
+       ],
+       "attenzione": "Salvo diverso accordo espresso, la verifica deve concludersi entro 30 giorni dalla consegna o dalla prestazione (art. 4, comma 6, D.Lgs. 231/2002)."
+      }
      },
      {
       "id": "b_durc",
       "t": "DURC regolare e in corso di validità",
-      "r": 1
+      "r": 1,
+      "aiuto": {
+       "cosa": "Il Documento unico di regolarità contributiva (DURC) attesta che il fornitore è in regola con INPS, INAIL e, se dovuto, con la Cassa edile. Va verificato prima del pagamento.",
+       "passi": [
+        "Accedi al servizio Durc On Line dal portale INPS o INAIL e inserisci il codice fiscale del fornitore.",
+        "Se c'è un DURC in corso di validità (120 giorni) scaricalo; altrimenti avvia la richiesta.",
+        "Conserva il documento nel fascicolo."
+       ],
+       "dove": "Portali INPS e INAIL, servizio Durc On Line.",
+       "attenzione": "Se il DURC è irregolare si applica l'intervento sostitutivo: trattieni l'importo dell'inadempienza e lo versi direttamente agli enti (art. 11, comma 6, D.Lgs. 36/2023). Nel frattempo puoi sospendere la pratica indicando il motivo."
+      }
      },
      {
       "id": "b_48b",
       "t": "Verifica inadempimenti presso Agenzia Entrate-Riscossione (pagamenti oltre 5.000 €)",
       "r": 0,
-      "ref": "art. 48-bis DPR 602/1973"
+      "ref": "art. 48-bis DPR 602/1973",
+      "aiuto": {
+       "cosa": "Prima di pagare importi superiori a 5.000 € devi verificare se il beneficiario è inadempiente all'obbligo di pagare cartelle per almeno quell'importo (art. 48-bis DPR 602/1973; DM 40/2008).",
+       "passi": [
+        "Accedi al servizio di verifica inadempimenti di Agenzia delle Entrate-Riscossione con le credenziali dell'ufficio.",
+        "Inserisci codice fiscale del beneficiario e importo da pagare.",
+        "Se l'esito è «soggetto non inadempiente», procedi e conserva la ricevuta nel fascicolo."
+       ],
+       "dove": "Agenzia delle Entrate-Riscossione, servizio di verifica inadempimenti riservato alle pubbliche amministrazioni.",
+       "attenzione": "Se il beneficiario risulta inadempiente, il pagamento resta sospeso per 60 giorni, fino a concorrenza del debito, in attesa dell'eventuale pignoramento: sospendi la pratica e segui le indicazioni di Agenzia delle Entrate-Riscossione."
+      }
      },
      {
       "id": "b_liq",
       "t": "Atto di liquidazione firmato",
-      "r": 1
+      "r": 1,
+      "aiuto": {
+       "cosa": "L'atto di liquidazione accerta il diritto del creditore e fissa l'importo esatto da pagare.",
+       "passi": [
+        "Richiama impegno, contratto o ordine, fattura, CIG ed eventuale CUP.",
+        "Dai atto della regolare esecuzione, del DURC regolare e, se dovuta, della verifica presso Agenzia delle Entrate-Riscossione.",
+        "Separa imponibile e IVA da versare in scissione dei pagamenti; applica eventuali penali o trattenute.",
+        "Indica beneficiario, importo da pagare, eventuali ritenute e IBAN.",
+        "Fai firmare l'atto dal dirigente e protocollalo."
+       ]
+      }
      }
     ],
     [
      {
       "id": "b_pcc",
       "t": "Fattura contabilizzata su PCC / sistema contabile (liquidata, sospesa o non liquidabile)",
-      "r": 1
+      "r": 1,
+      "aiuto": {
+       "cosa": "Sulla Piattaforma dei crediti commerciali (PCC) ogni fattura deve risultare nello stato corretto: liquidata, sospesa o non liquidabile. Questi dati alimentano gli indicatori dei tempi di pagamento.",
+       "passi": [
+        "Verifica sulla PCC lo stato della fattura.",
+        "Se il sistema contabile è integrato con la PCC lo stato si aggiorna di norma in automatico: controlla comunque che sia corretto.",
+        "Se la fattura è sospesa o non liquidabile, indica la causale (per esempio contestazione, DURC irregolare, attesa di nota di credito)."
+       ],
+       "dove": "Piattaforma dei crediti commerciali della Ragioneria generale dello Stato."
+      }
      },
      {
       "id": "b_spl",
       "t": "Scissione dei pagamenti IVA applicata",
       "r": 1,
-      "ref": "art. 17-ter DPR 633/1972"
+      "ref": "art. 17-ter DPR 633/1972",
+      "aiuto": {
+       "cosa": "Con la scissione dei pagamenti l'amministrazione paga al fornitore solo l'imponibile e versa direttamente l'IVA all'Erario (art. 17-ter DPR 633/1972).",
+       "passi": [
+        "Verifica che la fattura riporti l'esigibilità IVA «S», scissione dei pagamenti.",
+        "Nel titolo separa l'imponibile, da pagare al fornitore, dall'IVA, da versare all'Erario.",
+        "Controlla che il versamento dell'IVA avvenga con le modalità del sistema contabile in uso."
+       ],
+       "attenzione": "La scissione non si applica ai compensi per servizi assoggettati a ritenuta alla fonte, come quelli dei professionisti (art. 12 DL 87/2018)."
+      }
      },
      {
       "id": "b_op",
       "t": "Ordine di pagamento / titolo di spesa emesso (estremi nei dati)",
-      "r": 1
+      "r": 1,
+      "aiuto": {
+       "cosa": "Il titolo di pagamento (ordine di pagamento) dispone il pagamento al beneficiario a valere sull'impegno.",
+       "passi": [
+        "Nel sistema contabile emetti il titolo collegandolo all'impegno e, se c'è, alla fattura.",
+        "Indica beneficiario, IBAN, importo netto, eventuali ritenute e, per le fatture in scissione dei pagamenti, l'IVA da versare all'Erario.",
+        "Nella causale riporta l'oggetto e, se previsti, CIG e CUP.",
+        "Firma digitalmente, trasmetti e registra il numero del titolo nei dati della pratica."
+       ],
+       "dove": "Sistema contabile in uso (InIt o SICOGE)."
+      }
      },
      {
       "id": "b_ucb",
       "t": "Titolo all'Ufficio centrale di bilancio per il controllo",
       "r": 1,
-      "ref": "D.Lgs. 123/2011"
+      "ref": "D.Lgs. 123/2011",
+      "aiuto": {
+       "cosa": "I titoli di spesa sono sottoposti al controllo di regolarità amministrativa e contabile dell'Ufficio centrale di bilancio presso il Ministero (D.Lgs. 123/2011).",
+       "passi": [
+        "Verifica che il titolo sia stato trasmesso con tutta la documentazione richiesta.",
+        "Segui lo stato del controllo nel sistema contabile.",
+        "Se l'Ufficio centrale di bilancio formula osservazioni, rispondi nei tempi indicati oppure correggi e ritrasmetti."
+       ],
+       "dove": "Sistema contabile in uso (InIt o SICOGE)."
+      }
      }
     ],
     [
      {
       "id": "b_vis",
       "t": "Esito positivo del controllo",
-      "r": 1
+      "r": 1,
+      "aiuto": {
+       "cosa": "Il pagamento parte solo dopo l'esito positivo del controllo dell'Ufficio centrale di bilancio.",
+       "passi": [
+        "Controlla nel sistema contabile che il titolo risulti con esito positivo.",
+        "Se è stato restituito con osservazioni, riporta la pratica alla fase di contabilizzazione e correggi."
+       ],
+       "dove": "Sistema contabile in uso (InIt o SICOGE)."
+      }
      },
      {
       "id": "b_pag",
       "t": "Pagamento eseguito (data e quietanza nei dati)",
-      "r": 1
+      "r": 1,
+      "aiuto": {
+       "cosa": "Il pagamento è eseguito dalla tesoreria dello Stato presso la Banca d'Italia, con accredito sul conto del beneficiario.",
+       "passi": [
+        "Verifica nel sistema contabile che il titolo risulti pagato e con quale data.",
+        "Annota data di pagamento ed estremi della quietanza nei dati della pratica.",
+        "Se il beneficiario segnala il mancato accredito, controlla l'IBAN e l'eventuale storno del bonifico."
+       ],
+       "dove": "Sistema contabile in uso (InIt o SICOGE)."
+      }
      },
      {
       "id": "b_pccp",
       "t": "Pagamento risultante su PCC",
-      "r": 0
+      "r": 0,
+      "aiuto": {
+       "cosa": "Anche il pagamento deve risultare sulla Piattaforma dei crediti commerciali: chiude la posizione debitoria e serve al calcolo dei tempi medi di pagamento.",
+       "passi": [
+        "Verifica sulla PCC che la fattura risulti pagata, con data e importo corretti.",
+        "Se lo stato non si è aggiornato in automatico, comunica il pagamento sulla piattaforma."
+       ],
+       "dove": "Piattaforma dei crediti commerciali della Ragioneria generale dello Stato."
+      }
      },
      {
       "id": "b_arc",
       "t": "Fascicolo completato e archiviato; adempimenti di trasparenza verificati",
-      "r": 1
+      "r": 1,
+      "aiuto": {
+       "cosa": "Chiudere il fascicolo significa conservare tutti gli atti della spesa e verificare le pubblicazioni obbligatorie.",
+       "passi": [
+        "Raccogli nel fascicolo: determina, ordine o contratto, fattura, verifica di conformità, DURC, verifica presso Agenzia delle Entrate-Riscossione, liquidazione, titolo, quietanza.",
+        "Verifica la pubblicazione dei dati del contratto, che avviene tramite la Banca dati nazionale dei contratti pubblici (art. 28 D.Lgs. 36/2023).",
+        "Verifica che il pagamento rientri nei dati sui pagamenti pubblicati in Amministrazione trasparente (art. 4-bis D.Lgs. 33/2013)."
+       ],
+       "attenzione": "Per i dubbi sugli obblighi di pubblicazione, rivolgiti al Responsabile della prevenzione della corruzione e della trasparenza."
+      }
      }
     ]
    ]
@@ -159,81 +367,204 @@
      {
       "id": "l_tit",
       "t": "Titolo acquisito (sentenza, ordinanza, decreto) e verificata la sua esecutività",
-      "r": 1
+      "r": 1,
+      "aiuto": {
+       "cosa": "Il titolo è il provvedimento del giudice che condanna l'amministrazione al pagamento: sentenza, ordinanza o decreto. Prima di pagare devi sapere se è esecutivo e quando è stato notificato.",
+       "passi": [
+        "Acquisisci copia del provvedimento e della notifica, anche tramite l'Avvocatura dello Stato.",
+        "Verifica l'esecutività: per esempio la sentenza civile di primo grado è provvisoriamente esecutiva (art. 282 c.p.c.), mentre il decreto ingiuntivo richiede la dichiarazione di esecutorietà.",
+        "Registra nei dati la data di notifica del titolo esecutivo: da lì decorrono i 120 giorni prima dei quali il creditore non può avviare l'esecuzione forzata (art. 14 DL 669/1996)."
+       ],
+       "attenzione": "Se è in corso o prevista un'impugnazione, chiedi all'Avvocatura se è stata chiesta la sospensione dell'esecutività prima di pagare."
+      }
      },
      {
       "id": "l_avv",
       "t": "Indicazioni dell'Avvocatura dello Stato acquisite, ove necessarie",
-      "r": 0
+      "r": 0,
+      "aiuto": {
+       "cosa": "L'Avvocatura dello Stato difende il Ministero in giudizio: le sue indicazioni servono a decidere se pagare subito, impugnare o attendere.",
+       "passi": [
+        "Scrivi all'Avvocatura generale o distrettuale che segue la causa indicando numero di ruolo e provvedimento.",
+        "Chiedi se sono previste impugnazioni o istanze di sospensione e se la quantificazione delle spese è corretta.",
+        "Conserva la risposta nel fascicolo."
+       ],
+       "dove": "PEC istituzionale."
+      }
      },
      {
       "id": "l_qnt",
       "t": "Importo quantificato: spese, compensi, accessori (spese generali, CPA, IVA) ed eventuali interessi",
       "r": 1,
-      "ref": "DM 55/2014"
+      "ref": "DM 55/2014",
+      "aiuto": {
+       "cosa": "Devi calcolare con esattezza quanto pagare in base al dispositivo del provvedimento.",
+       "passi": [
+        "Parti dalle somme liquidate dal giudice: compensi ed eventuali spese vive, come il contributo unificato.",
+        "Se il provvedimento riconosce gli «accessori di legge», aggiungi le spese generali al 15% dei compensi (art. 2 DM 55/2014), il contributo previdenziale (CPA) al 4% e l'IVA al 22% su compensi, spese generali e CPA.",
+        "Calcola gli eventuali interessi legali dalla data indicata nel provvedimento.",
+        "Le spese vive documentate, anticipate in nome e per conto del cliente, non sono soggette a IVA."
+       ],
+       "attenzione": "Se la parte vittoriosa è un soggetto IVA che può detrarre l'imposta, di norma l'IVA sulle spese legali non le va rimborsata: verifica la posizione fiscale e, nel dubbio, chiedi all'Avvocatura."
+      }
      },
      {
       "id": "l_cap",
       "t": "Capitolo individuato e disponibilità verificata",
-      "r": 1
+      "r": 1,
+      "aiuto": {
+       "cosa": "Le condanne alle spese si pagano sul capitolo dedicato alle spese per liti e accessori dello stato di previsione del Ministero.",
+       "passi": [
+        "Individua capitolo e piano gestionale delle spese per liti.",
+        "Verifica la disponibilità con la Direzione generale del personale, del bilancio, dei servizi strumentali e della comunicazione.",
+        "Se i fondi non bastano, segnalalo subito: il termine di 120 giorni non si sospende."
+       ],
+       "dove": "Sistema contabile in uso (InIt o SICOGE)."
+      }
      },
      {
       "id": "l_ben",
       "t": "Beneficiario individuato (parte o difensore distrattario) con dati anagrafici e bancari",
       "r": 1,
-      "ref": "art. 93 c.p.c."
+      "ref": "art. 93 c.p.c.",
+      "aiuto": {
+       "cosa": "Devi sapere a chi pagare: alla parte vittoriosa oppure al suo avvocato, se il giudice ha disposto la distrazione delle spese a favore del difensore antistatario (art. 93 c.p.c.).",
+       "passi": [
+        "Leggi il dispositivo: se dispone la distrazione, il beneficiario è l'avvocato.",
+        "Chiedi al beneficiario codice fiscale o partita IVA, IBAN a lui intestato e, se è un professionista, il regime fiscale.",
+        "Conserva nel fascicolo la comunicazione firmata con i dati bancari."
+       ]
+      }
      }
     ],
     [
      {
       "id": "l_doc",
       "t": "Documentazione di spesa acquisita (nota spese, fattura del difensore distrattario)",
-      "r": 1
+      "r": 1,
+      "aiuto": {
+       "cosa": "Serve la documentazione che giustifica il pagamento: la nota spese o la fattura del difensore.",
+       "passi": [
+        "Chiedi al difensore distrattario la fattura o il documento fiscale per le somme liquidate.",
+        "Verifica che gli importi corrispondano alla quantificazione.",
+        "Controlla se il difensore è soggetto a ritenuta d'acconto o rientra in un regime che la esclude, come il regime forfettario."
+       ]
+      }
      },
      {
       "id": "l_48b",
       "t": "Verifica inadempimenti presso Agenzia Entrate-Riscossione (pagamenti oltre 5.000 €)",
       "r": 0,
-      "ref": "art. 48-bis DPR 602/1973"
+      "ref": "art. 48-bis DPR 602/1973",
+      "aiuto": {
+       "cosa": "Prima di pagare importi superiori a 5.000 € devi verificare se il beneficiario è inadempiente all'obbligo di pagare cartelle per almeno quell'importo (art. 48-bis DPR 602/1973; DM 40/2008).",
+       "passi": [
+        "Accedi al servizio di verifica inadempimenti di Agenzia delle Entrate-Riscossione con le credenziali dell'ufficio.",
+        "Inserisci codice fiscale del beneficiario e importo da pagare.",
+        "Se l'esito è «soggetto non inadempiente», procedi e conserva la ricevuta nel fascicolo."
+       ],
+       "dove": "Agenzia delle Entrate-Riscossione, servizio di verifica inadempimenti riservato alle pubbliche amministrazioni.",
+       "attenzione": "Se il beneficiario risulta inadempiente, il pagamento resta sospeso per 60 giorni, fino a concorrenza del debito, in attesa dell'eventuale pignoramento: sospendi la pratica e segui le indicazioni di Agenzia delle Entrate-Riscossione."
+      }
      },
      {
       "id": "l_att",
       "t": "Atto di liquidazione predisposto",
-      "r": 1
+      "r": 1,
+      "aiuto": {
+       "cosa": "L'atto di liquidazione riepiloga titolo, beneficiario, importi e calcoli e consente alla Direzione competente di disporre il pagamento.",
+       "passi": [
+        "Richiama il provvedimento, la notifica e le indicazioni dell'Avvocatura.",
+        "Riporta il dettaglio del calcolo: compensi, spese generali, CPA, IVA, interessi, spese vive.",
+        "Indica il capitolo di spesa.",
+        "Indica beneficiario, importo da pagare, eventuali ritenute e IBAN.",
+        "Fai firmare l'atto dal dirigente e protocollalo."
+       ]
+      }
      },
      {
       "id": "l_tra",
       "t": "Atti trasmessi alla DG del personale, del bilancio, dei servizi strumentali e della comunicazione",
-      "r": 1
+      "r": 1,
+      "aiuto": {
+       "cosa": "Il pagamento delle spese legali è disposto dalla Direzione generale del personale, del bilancio, dei servizi strumentali e della comunicazione, sulla base degli atti predisposti dall'Ufficio I.",
+       "passi": [
+        "Trasmetti con nota protocollata l'atto di liquidazione e gli allegati: titolo, notifica, quantificazione, dati del beneficiario, verifica presso Agenzia delle Entrate-Riscossione.",
+        "Evidenzia nella nota la scadenza dei 120 giorni.",
+        "Annota il protocollo della trasmissione nelle note della pratica."
+       ],
+       "dove": "Sistema di protocollo."
+      }
      }
     ],
     [
      {
       "id": "l_imp",
       "t": "Impegno e ordine di pagamento emessi dalla DG competente (estremi nei dati)",
-      "r": 1
+      "r": 1,
+      "aiuto": {
+       "cosa": "La Direzione competente assume l'impegno ed emette l'ordine di pagamento.",
+       "passi": [
+        "Chiedi alla Direzione gli estremi dell'impegno e dell'ordine di pagamento.",
+        "Registrali nei dati della pratica.",
+        "Se la Direzione segnala carenze, integra gli atti."
+       ]
+      }
      },
      {
       "id": "l_rit",
       "t": "Ritenuta d'acconto applicata, ove dovuta",
-      "r": 0
+      "r": 0,
+      "aiuto": {
+       "cosa": "Quando paga compensi a un professionista, l'amministrazione agisce come sostituto d'imposta e trattiene la ritenuta d'acconto del 20% (art. 25 DPR 600/1973).",
+       "passi": [
+        "Verifica se il beneficiario è un professionista soggetto a ritenuta: non lo è, per esempio, chi applica il regime forfettario.",
+        "Calcola la ritenuta su compensi e spese generali, escludendo IVA, CPA e spese vive documentate.",
+        "Verifica che la ritenuta sia indicata nel titolo e poi versata e certificata."
+       ],
+       "attenzione": "Se la ritenuta si applica, non si applica la scissione dei pagamenti IVA."
+      }
      }
     ],
     [
      {
       "id": "l_pag",
       "t": "Pagamento eseguito (data e quietanza nei dati)",
-      "r": 1
+      "r": 1,
+      "aiuto": {
+       "cosa": "Devi verificare che il pagamento sia stato eseguito.",
+       "passi": [
+        "Chiedi alla Direzione competente, o verifica nel sistema contabile, data di pagamento ed estremi della quietanza.",
+        "Annotali nei dati della pratica."
+       ]
+      }
      },
      {
       "id": "l_com",
       "t": "Pagamento comunicato all'Avvocatura dello Stato e alla controparte",
-      "r": 1
+      "r": 1,
+      "aiuto": {
+       "cosa": "Comunicare l'avvenuto pagamento evita atti esecutivi inutili, come precetto, pignoramento o giudizio di ottemperanza, con ulteriori spese per l'amministrazione.",
+       "passi": [
+        "Invia la quietanza all'Avvocatura dello Stato che segue la causa.",
+        "Se l'Avvocatura lo indica, comunica il pagamento anche al difensore della controparte.",
+        "Conserva le comunicazioni nel fascicolo."
+       ],
+       "dove": "PEC istituzionale."
+      }
      },
      {
       "id": "l_fas",
       "t": "Fascicolo del contenzioso aggiornato",
-      "r": 1
+      "r": 1,
+      "aiuto": {
+       "cosa": "Il fascicolo del contenzioso deve dare conto della chiusura della posizione.",
+       "passi": [
+        "Inserisci quietanza e comunicazioni nel fascicolo.",
+        "Aggiorna lo stato della causa nel registro del contenzioso dell'ufficio.",
+        "Valuta con il dirigente se la condanna comporta un possibile danno erariale da denunciare alla Procura della Corte dei conti (art. 52 D.Lgs. 174/2016)."
+       ]
+      }
      }
     ]
    ]
@@ -246,69 +577,173 @@
      {
       "id": "c_nom",
       "t": "Atto di nomina e determinazione del compenso acquisiti",
-      "r": 1
+      "r": 1,
+      "aiuto": {
+       "cosa": "Il compenso spetta in base all'atto di nomina e all'atto, o alla norma, che ne fissa la misura.",
+       "passi": [
+        "Acquisisci il decreto di nomina e l'atto che determina il compenso.",
+        "Verifica durata dell'incarico, importo, periodicità ed eventuali rimborsi spese.",
+        "Se il nominato è dipendente pubblico, verifica l'autorizzazione dell'amministrazione di appartenenza (art. 53 D.Lgs. 165/2001)."
+       ]
+      }
      },
      {
       "id": "c_per",
       "t": "Periodo di riferimento e importo spettante determinati",
-      "r": 1
+      "r": 1,
+      "aiuto": {
+       "cosa": "Devi stabilire per quale periodo paghi e quanto spetta, anche in proporzione.",
+       "passi": [
+        "Individua inizio e fine del periodo da liquidare.",
+        "Calcola l'importo spettante, rapportandolo ai giorni o ai mesi effettivi se la nomina o la cessazione cadono a periodo in corso.",
+        "Annota il periodo nei dati della pratica."
+       ]
+      }
      },
      {
       "id": "c_imp",
       "t": "Impegno di spesa registrato sul capitolo",
-      "r": 1
+      "r": 1,
+      "aiuto": {
+       "cosa": "L'impegno vincola le somme sul bilancio a favore del creditore. Si assume quando l'obbligazione è giuridicamente perfezionata e si imputa all'esercizio in cui diventa esigibile (art. 34 L. 196/2009).",
+       "passi": [
+        "Predisponi il decreto di impegno nel sistema contabile indicando creditore, importo, capitolo e piano gestionale, esercizio di esigibilità ed eventuali CIG e CUP.",
+        "Allega l'atto da cui nasce l'obbligazione (determina e contratto, provvedimento di nomina, titolo giudiziale).",
+        "Firma digitalmente e trasmetti all'Ufficio centrale di bilancio per il controllo preventivo di regolarità amministrativa e contabile (D.Lgs. 123/2011).",
+        "Registra il numero di impegno nei dati della pratica."
+       ],
+       "dove": "Sistema contabile in uso (InIt o SICOGE).",
+       "attenzione": "Gli impegni si assumono nei limiti degli stanziamenti. Se il pagamento cadrà in più esercizi, prevedi il cronoprogramma (impegno pluriennale ad esigibilità)."
+      }
      }
     ],
     [
      {
       "id": "c_dic",
       "t": "Dichiarazioni del percettore acquisite (posizione fiscale e previdenziale, dati bancari, fattura se titolare di partita IVA)",
-      "r": 1
+      "r": 1,
+      "aiuto": {
+       "cosa": "Per pagare correttamente servono la posizione fiscale e previdenziale del percettore e i suoi dati bancari.",
+       "passi": [
+        "Chiedi una dichiarazione con codice fiscale, residenza fiscale, eventuale rapporto di pubblico impiego, eventuale partita IVA e regime fiscale, eventuale iscrizione alla gestione separata INPS, IBAN.",
+        "Se il percettore ha partita IVA e l'incarico rientra nella sua attività professionale, chiedi la fattura elettronica.",
+        "Se è dipendente pubblico, verifica se il compenso va riversato all'amministrazione di appartenenza in base al principio di onnicomprensività."
+       ]
+      }
      },
      {
       "id": "c_att",
       "t": "Attestazione dell'attività svolta / delle presenze",
-      "r": 1
+      "r": 1,
+      "aiuto": {
+       "cosa": "Il pagamento richiede l'attestazione che l'attività è stata svolta nel periodo.",
+       "passi": [
+        "Acquisisci relazione, verbali o prospetto delle presenze.",
+        "Verifica che corrispondano al periodo da liquidare."
+       ]
+      }
      },
      {
       "id": "c_rit",
       "t": "Ritenute calcolate",
-      "r": 1
+      "r": 1,
+      "aiuto": {
+       "cosa": "Le ritenute dipendono dalla natura del compenso.",
+       "passi": [
+        "Lavoro autonomo professionale: ritenuta d'acconto del 20% (art. 25 DPR 600/1973), salvo i regimi che la escludono.",
+        "Compensi per la partecipazione a collegi e commissioni, se non rientrano nell'attività professionale: redditi assimilati al lavoro dipendente (art. 50 TUIR), con IRPEF a scaglioni, addizionali regionale e comunale ed eventuali contributi alla gestione separata INPS.",
+        "Riporta il calcolo nell'atto di liquidazione."
+       ],
+       "attenzione": "Nei casi dubbi sulla qualificazione del compenso, confrontati con l'ufficio che gestisce gli adempimenti del sostituto d'imposta."
+      }
      },
      {
       "id": "c_tet",
       "t": "Verificati limiti e cumuli, ove applicabili",
       "r": 0,
-      "ref": "art. 23-ter DL 201/2011"
+      "ref": "art. 23-ter DL 201/2011",
+      "aiuto": {
+       "cosa": "Il trattamento economico annuo complessivo a carico delle finanze pubbliche non può superare 240.000 € (art. 23-ter DL 201/2011, come modificato dall'art. 13 DL 66/2014).",
+       "passi": [
+        "Chiedi al percettore se riceve altri compensi a carico di amministrazioni pubbliche.",
+        "Verifica che il totale non superi il limite.",
+        "Verifica gli eventuali limiti specifici previsti per l'incarico."
+       ]
+      }
      },
      {
       "id": "c_liq",
       "t": "Atto di liquidazione firmato",
-      "r": 1
+      "r": 1,
+      "aiuto": {
+       "cosa": "L'atto di liquidazione accerta il diritto al compenso e fissa l'importo esatto da pagare.",
+       "passi": [
+        "Richiama nomina, atto di determinazione del compenso, impegno e attestazione dell'attività.",
+        "Riporta il calcolo del compenso lordo e delle ritenute.",
+        "Indica beneficiario, importo da pagare, eventuali ritenute e IBAN.",
+        "Fai firmare l'atto dal dirigente e protocollalo."
+       ]
+      }
      }
     ],
     [
      {
       "id": "c_op",
       "t": "Ordine di pagamento emesso (estremi nei dati)",
-      "r": 1
+      "r": 1,
+      "aiuto": {
+       "cosa": "Il titolo di pagamento (ordine di pagamento) dispone il pagamento al beneficiario a valere sull'impegno.",
+       "passi": [
+        "Nel sistema contabile emetti il titolo collegandolo all'impegno e, se c'è, alla fattura.",
+        "Indica beneficiario, IBAN, importo netto, eventuali ritenute e, per le fatture in scissione dei pagamenti, l'IVA da versare all'Erario.",
+        "Nella causale riporta l'oggetto e, se previsti, CIG e CUP.",
+        "Firma digitalmente, trasmetti e registra il numero del titolo nei dati della pratica."
+       ],
+       "dove": "Sistema contabile in uso (InIt o SICOGE)."
+      }
      },
      {
       "id": "c_ucb",
       "t": "Titolo all'Ufficio centrale di bilancio per il controllo",
-      "r": 1
+      "r": 1,
+      "aiuto": {
+       "cosa": "I titoli di spesa sono sottoposti al controllo di regolarità amministrativa e contabile dell'Ufficio centrale di bilancio presso il Ministero (D.Lgs. 123/2011).",
+       "passi": [
+        "Verifica che il titolo sia stato trasmesso con tutta la documentazione richiesta.",
+        "Segui lo stato del controllo nel sistema contabile.",
+        "Se l'Ufficio centrale di bilancio formula osservazioni, rispondi nei tempi indicati oppure correggi e ritrasmetti."
+       ],
+       "dove": "Sistema contabile in uso (InIt o SICOGE)."
+      }
      }
     ],
     [
      {
       "id": "c_pag",
       "t": "Pagamento eseguito (data e quietanza nei dati)",
-      "r": 1
+      "r": 1,
+      "aiuto": {
+       "cosa": "Il pagamento è eseguito dalla tesoreria dello Stato presso la Banca d'Italia, con accredito sul conto del beneficiario.",
+       "passi": [
+        "Verifica nel sistema contabile che il titolo risulti pagato e con quale data.",
+        "Annota data di pagamento ed estremi della quietanza nei dati della pratica.",
+        "Se il beneficiario segnala il mancato accredito, controlla l'IBAN e l'eventuale storno del bonifico."
+       ],
+       "dove": "Sistema contabile in uso (InIt o SICOGE)."
+      }
      },
      {
       "id": "c_cu",
       "t": "Annotati gli adempimenti del sostituto d'imposta (Certificazione Unica)",
-      "r": 0
+      "r": 0,
+      "aiuto": {
+       "cosa": "Come sostituto d'imposta l'amministrazione deve certificare i compensi pagati e le ritenute operate, e comunicare gli incarichi ai dipendenti pubblici.",
+       "passi": [
+        "Verifica che il pagamento confluisca nella Certificazione Unica da consegnare al percettore e trasmettere all'Agenzia delle Entrate entro il 16 marzo dell'anno successivo.",
+        "Se il percettore è dipendente di un'altra amministrazione, comunicale il compenso entro 15 giorni dall'erogazione (art. 53, comma 11, D.Lgs. 165/2001).",
+        "Verifica la comunicazione dell'incarico all'Anagrafe delle prestazioni sul portale PerlaPA, se dovuta."
+       ]
+      }
      }
     ]
    ]
@@ -321,48 +756,117 @@
      {
       "id": "a_att",
       "t": "Atto che autorizza la spesa adottato",
-      "r": 1
+      "r": 1,
+      "aiuto": {
+       "cosa": "Ogni spesa nasce da un atto che la autorizza: una determina, un decreto, un provvedimento o una norma.",
+       "passi": [
+        "Individua l'atto da cui nasce l'obbligazione.",
+        "Verifica che indichi beneficiario, oggetto, importo e copertura.",
+        "Fai firmare l'atto dal dirigente e protocollalo."
+       ]
+      }
      },
      {
       "id": "a_cop",
       "t": "Copertura verificata e impegno registrato",
-      "r": 1
+      "r": 1,
+      "aiuto": {
+       "cosa": "L'impegno vincola le somme sul bilancio a favore del creditore. Si assume quando l'obbligazione è giuridicamente perfezionata e si imputa all'esercizio in cui diventa esigibile (art. 34 L. 196/2009).",
+       "passi": [
+        "Predisponi il decreto di impegno nel sistema contabile indicando creditore, importo, capitolo e piano gestionale, esercizio di esigibilità ed eventuali CIG e CUP.",
+        "Allega l'atto da cui nasce l'obbligazione (determina e contratto, provvedimento di nomina, titolo giudiziale).",
+        "Firma digitalmente e trasmetti all'Ufficio centrale di bilancio per il controllo preventivo di regolarità amministrativa e contabile (D.Lgs. 123/2011).",
+        "Registra il numero di impegno nei dati della pratica."
+       ],
+       "dove": "Sistema contabile in uso (InIt o SICOGE).",
+       "attenzione": "Gli impegni si assumono nei limiti degli stanziamenti. Se il pagamento cadrà in più esercizi, prevedi il cronoprogramma (impegno pluriennale ad esigibilità)."
+      }
      }
     ],
     [
      {
       "id": "a_doc",
       "t": "Documentazione giustificativa acquisita e verificata",
-      "r": 1
+      "r": 1,
+      "aiuto": {
+       "cosa": "Serve la documentazione che dimostra il diritto al pagamento: fattura, ricevute, prospetti o attestazioni.",
+       "passi": [
+        "Raccogli i documenti giustificativi.",
+        "Verifica la corrispondenza con l'atto di autorizzazione e con l'importo.",
+        "Se il pagamento supera 5.000 €, verifica se è dovuto il controllo presso Agenzia delle Entrate-Riscossione."
+       ]
+      }
      },
      {
       "id": "a_liq",
       "t": "Atto di liquidazione firmato",
-      "r": 1
+      "r": 1,
+      "aiuto": {
+       "cosa": "L'atto di liquidazione accerta il diritto del creditore e fissa l'importo esatto da pagare.",
+       "passi": [
+        "Richiama l'atto di autorizzazione, l'impegno e i documenti giustificativi.",
+        "Indica beneficiario, importo da pagare, eventuali ritenute e IBAN.",
+        "Fai firmare l'atto dal dirigente e protocollalo."
+       ]
+      }
      }
     ],
     [
      {
       "id": "a_reg",
       "t": "Spesa registrata nel sistema contabile",
-      "r": 1
+      "r": 1,
+      "aiuto": {
+       "cosa": "La spesa liquidata deve essere registrata nel sistema contabile e, se riguarda fatture commerciali, sulla Piattaforma dei crediti commerciali.",
+       "passi": [
+        "Registra la liquidazione nel sistema contabile.",
+        "Se c'è una fattura, verifica il suo stato sulla PCC."
+       ],
+       "dove": "Sistema contabile in uso (InIt o SICOGE)."
+      }
      },
      {
       "id": "a_op",
       "t": "Ordine di pagamento emesso",
-      "r": 1
+      "r": 1,
+      "aiuto": {
+       "cosa": "Il titolo di pagamento (ordine di pagamento) dispone il pagamento al beneficiario a valere sull'impegno.",
+       "passi": [
+        "Nel sistema contabile emetti il titolo collegandolo all'impegno e, se c'è, alla fattura.",
+        "Indica beneficiario, IBAN, importo netto, eventuali ritenute e, per le fatture in scissione dei pagamenti, l'IVA da versare all'Erario.",
+        "Nella causale riporta l'oggetto e, se previsti, CIG e CUP.",
+        "Firma digitalmente, trasmetti e registra il numero del titolo nei dati della pratica."
+       ],
+       "dove": "Sistema contabile in uso (InIt o SICOGE)."
+      }
      }
     ],
     [
      {
       "id": "a_pag",
       "t": "Pagamento eseguito (data e quietanza nei dati)",
-      "r": 1
+      "r": 1,
+      "aiuto": {
+       "cosa": "Il pagamento è eseguito dalla tesoreria dello Stato presso la Banca d'Italia, con accredito sul conto del beneficiario.",
+       "passi": [
+        "Verifica nel sistema contabile che il titolo risulti pagato e con quale data.",
+        "Annota data di pagamento ed estremi della quietanza nei dati della pratica.",
+        "Se il beneficiario segnala il mancato accredito, controlla l'IBAN e l'eventuale storno del bonifico."
+       ],
+       "dove": "Sistema contabile in uso (InIt o SICOGE)."
+      }
      },
      {
       "id": "a_arc",
       "t": "Fascicolo archiviato",
-      "r": 1
+      "r": 1,
+      "aiuto": {
+       "cosa": "Chiudere il fascicolo significa conservare tutti gli atti della spesa e verificare le pubblicazioni obbligatorie.",
+       "passi": [
+        "Raccogli nel fascicolo atto di autorizzazione, documenti giustificativi, liquidazione, titolo e quietanza.",
+        "Verifica gli eventuali obblighi di pubblicazione in Amministrazione trasparente."
+       ]
+      }
      }
     ]
    ]
