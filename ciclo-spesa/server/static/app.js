@@ -31,7 +31,7 @@ const S = {
   formDirty: false, advWarn: false, delAsk: false, sospAsk: false, busy: false,
   f: {q:'', tipo:'', fase:'aperte', stato:'', mie:false, eserc:''},
   segreto: null, offline: false, poll: null,
-  modo: 'guida', wizIdx: null, wizSpiega: false, wizRiep: false, wizIntro: null,
+  modo: 'guida', wizIdx: null, wizSpiega: false, wizRiep: false, wizIntro: null, saltaAsk: false,
 };
 const canWrite = () => S.me && (S.me.ruolo === 'admin' || S.me.ruolo === 'operatore');
 const isAdmin = () => S.me && S.me.ruolo === 'admin';
@@ -66,7 +66,7 @@ function setOffline(v) {
   if (v) banner('warn', '<b>Server non raggiungibile.</b> I dati mostrati potrebbero non essere aggiornati; riprovo in automatico.');
   else banner(canWrite() ? '' : 'info', canWrite() ? '' : 'Profilo di consultazione: puoi vedere le pratiche ma non modificarle.');
 }
-function banner(kind, html) { const b = $('#banner'); if (!html) { b.hidden = true; return; } b.className = 'banner ' + kind; b.innerHTML = `<div class="wrap">${html}</div>`; b.hidden = false; }
+function banner(kind, html) { const b = $('#banner'); if (!html) { b.hidden = true; return; } b.innerHTML = `<div class="container"><div class="alert alert-${kind === 'warn' ? 'warning' : 'info'}" role="status">${html}</div></div>`; b.hidden = false; }
 
 async function caricaTutto() {
   const [u, p] = await Promise.all([api('GET', '/api/utenti'), api('GET', '/api/pratiche')]);
@@ -119,13 +119,13 @@ function termineRifiuto(p) {
   const r = parseD(p.dataRicezione); return r ? days(addDays(r, 15), today()) : null;
 }
 function scadChip(p) {
-  if ((p.fase ?? 0) >= CONCLUSA) return '<span class="chip ok">Conclusa</span>';
+  if ((p.fase ?? 0) >= CONCLUSA) return '<span class="badge text-bg-success">Conclusa</span>';
   const r = residuo(p), s = scadenza(p); let h = '';
-  if (p.sospesa) h += '<span class="chip warn">Sospesa</span>';
+  if (p.sospesa) h += '<span class="badge text-bg-warning">Sospesa</span>';
   if (r == null) return h;
-  if (r < 0) h += `<span class="chip bad">Scaduta da ${-r} gg</span>`;
-  else if (r <= 7) h += `<span class="chip warn">${r === 0 ? 'Scade oggi' : `Scade tra ${r} gg`}</span>`;
-  else h += `<span class="chip">Scad. ${fmtD(s.d)}</span>`;
+  if (r < 0) h += `<span class="badge text-bg-danger">Scaduta da ${-r} gg</span>`;
+  else if (r <= 7) h += `<span class="badge text-bg-warning">${r === 0 ? 'Scade oggi' : `Scade tra ${r} gg`}</span>`;
+  else h += `<span class="badge badge-neutro">Scad. ${fmtD(s.d)}</span>`;
   return h;
 }
 function avanzamento(p, f = (p.fase ?? 0)) { const l = TIPI[p.tipo]?.check[Math.min(f, 3)] || []; return {fatti: l.filter(i => p.check?.[i.id]).length, tot: l.length}; }
@@ -156,12 +156,12 @@ function renderCruscotto() {
       <ol><li>premi <b>Nuova pratica</b> e scegli la tipologia (beni e servizi, spese legali, compensi organi, altra spesa);</li>
       <li>spunta gli adempimenti man mano che li completi: la lista cambia in base alla tipologia;</li>
       <li>registra le date chiave (ricezione della fattura, notifica del titolo): le scadenze si calcolano da sole.</li></ol>
-      <div class="actions w"><button class="btn primary" data-act="new">+ Nuova pratica</button><button class="btn" data-act="esempio">Crea una pratica di esempio</button></div></div>`;
+      <div class="actions w"><button class="btn btn-primary" data-act="new">+ Nuova pratica</button><button class="btn btn-outline-primary" data-act="esempio">Crea una pratica di esempio</button></div></div>`;
   } else {
     h += '<div class="board">';
     FASI.forEach((f, i) => {
       const items = ap.filter(p => (p.fase ?? 0) === i).sort(perUrgenza);
-      h += `<div class="col"><div class="col-h"><span class="n">${i + 1}</span><h3>${esc(f.n)}</h3><span class="meta"><span class="num">${items.length}</span> pratiche<br><span class="num">${eur(somma(items))}</span></span></div>`;
+      h += `<div class="fase-col"><div class="col-h"><span class="n">${i + 1}</span><h3>${esc(f.n)}</h3><span class="meta"><span class="num">${items.length}</span> pratiche<br><span class="num">${eur(somma(items))}</span></span></div>`;
       h += items.length ? items.map(card).join('') : '<div class="col-empty">Nessuna pratica in questa fase.</div>';
       h += '</div>';
     });
@@ -172,11 +172,11 @@ function renderCruscotto() {
 function card(p) {
   const a = avanzamento(p); const rif = termineRifiuto(p);
   const df = (p.fase ?? 0) < CONCLUSA ? (TIPI[p.tipo]?.check[p.fase ?? 0] || []).filter(i => p.dafare?.[i.id] && !p.check?.[i.id]).length : 0;
-  return `<button class="card" data-open="${esc(p.id)}">
-    <div class="card-top"><span class="tag">${esc(TIPI[p.tipo]?.n || '')}</span>${p.esempio ? '<span class="chip ex">Esempio</span>' : ''}${scadChip(p)}${rif != null && rif >= 0 && rif <= 5 ? `<span class="chip warn">Esito fattura: ${rif} gg</span>` : ''}${df ? `<span class="chip acc">${df} da fare</span>` : ''}</div>
-    <div class="card-title">${esc(p.oggetto || '(senza oggetto)')}</div>
-    ${p.beneficiario ? `<div class="card-sub">${esc(p.beneficiario)}</div>` : ''}
-    <div class="card-foot"><span class="amt num">${eur(p.importo)}</span><progress class="prog" max="${a.tot || 1}" value="${a.fatti}" title="Adempimenti della fase"></progress><span class="num">${a.fatti}/${a.tot}</span></div>
+  return `<button class="pcard" data-open="${esc(p.id)}">
+    <div class="pc-top"><span class="tag">${esc(TIPI[p.tipo]?.n || '')}</span>${p.esempio ? '<span class="badge badge-neutro badge-es">Esempio</span>' : ''}${scadChip(p)}${rif != null && rif >= 0 && rif <= 5 ? `<span class="badge text-bg-warning">Esito fattura: ${rif} gg</span>` : ''}${df ? `<span class="badge text-bg-primary">${df} da fare</span>` : ''}</div>
+    <div class="pc-title">${esc(p.oggetto || '(senza oggetto)')}</div>
+    ${p.beneficiario ? `<div class="pc-sub">${esc(p.beneficiario)}</div>` : ''}
+    <div class="pc-foot"><span class="amt num">${eur(p.importo)}</span><progress class="prog" max="${a.tot || 1}" value="${a.fatti}" title="Adempimenti della fase"></progress><span class="num">${a.fatti}/${a.tot}</span></div>
   </button>`;
 }
 
@@ -202,13 +202,13 @@ function renderPratiche() {
   if (!$('#f-q', el)) {
     el.innerHTML = `<div class="section-h"><h2>Pratiche</h2><p>Ordinate per scadenza. Cerca per oggetto, beneficiario, CIG, impegno, numero di fattura o di ordine.</p></div>
     <div class="filters">
-      <input type="search" id="f-q" placeholder="Cerca…" aria-label="Cerca">
-      <select id="f-tipo" aria-label="Tipologia"><option value="">Tutte le tipologie</option>${ALL.map(k => `<option value="${k}">${esc(TIPI[k].n)}</option>`).join('')}</select>
-      <select id="f-fase" aria-label="Fase"><option value="aperte">Solo aperte</option><option value="">Tutte le fasi</option>${FASI.map((x, i) => `<option value="${i}">${i + 1}. ${esc(x.n)}</option>`).join('')}<option value="${CONCLUSA}">Concluse</option></select>
-      <select id="f-stato" aria-label="Stato"><option value="">Qualsiasi scadenza</option><option value="scadute">Scadute</option><option value="inscadenza">Entro 7 giorni</option><option value="sospese">Sospese</option></select>
-      <select id="f-eserc" aria-label="Esercizio"></select>
-      <label class="btn sm" for="f-mie"><input type="checkbox" id="f-mie"> Assegnate a me</label>
-      <button class="btn sm" id="f-csv" type="button">Esporta CSV</button>
+      <input class="form-control" type="search" id="f-q" placeholder="Cerca…" aria-label="Cerca">
+      <select class="form-select" id="f-tipo" aria-label="Tipologia"><option value="">Tutte le tipologie</option>${ALL.map(k => `<option value="${k}">${esc(TIPI[k].n)}</option>`).join('')}</select>
+      <select class="form-select" id="f-fase" aria-label="Fase"><option value="aperte">Solo aperte</option><option value="">Tutte le fasi</option>${FASI.map((x, i) => `<option value="${i}">${i + 1}. ${esc(x.n)}</option>`).join('')}<option value="${CONCLUSA}">Concluse</option></select>
+      <select class="form-select" id="f-stato" aria-label="Stato"><option value="">Qualsiasi scadenza</option><option value="scadute">Scadute</option><option value="inscadenza">Entro 7 giorni</option><option value="sospese">Sospese</option></select>
+      <select class="form-select" id="f-eserc" aria-label="Esercizio"></select>
+      <label class="mie" for="f-mie"><input type="checkbox" id="f-mie"> Assegnate a me</label>
+      <button class="btn btn-outline-primary btn-sm" id="f-csv" type="button">Esporta CSV</button>
     </div><div id="f-out"></div>`;
   }
   $('#f-q').value = f.q; $('#f-tipo').value = f.tipo; $('#f-fase').value = f.fase; $('#f-stato').value = f.stato; $('#f-mie').checked = f.mie;
@@ -217,10 +217,10 @@ function renderPratiche() {
   let h = `<p class="cnt"><span class="num">${list.length}</span> pratiche · totale <span class="num">${eur(somma(list))}</span></p>`;
   if (!list.length) h += '<div class="empty"><h3>Nessuna pratica corrisponde ai filtri</h3><p>Allarga la ricerca o scegli “Tutte le fasi”.</p></div>';
   else {
-    h += '<div class="tbl-wrap"><table><thead><tr><th>Fase</th><th>Oggetto e beneficiario</th><th>Tipologia</th><th class="r">Importo</th><th>Esercizio · capitolo</th><th>Scadenza</th><th>Assegnata a</th><th>Aggiornata</th></tr></thead><tbody>';
+    h += '<div class="tbl-wrap"><table class="table table-hover"><thead><tr><th>Fase</th><th>Oggetto e beneficiario</th><th>Tipologia</th><th class="r">Importo</th><th>Esercizio · capitolo</th><th>Scadenza</th><th>Assegnata a</th><th>Aggiornata</th></tr></thead><tbody>';
     h += list.map(p => { const a = avanzamento(p), s = scadenza(p), fase = p.fase ?? 0; return `<tr class="click" data-open="${esc(p.id)}" tabindex="0">
       <td><b>${fase < CONCLUSA ? (fase + 1) + '. ' : ''}${faseNome(fase)}</b><br><span class="num mut">${fase < CONCLUSA ? `${a.fatti}/${a.tot}` : ''}</span></td>
-      <td class="wide"><b>${esc(p.oggetto || '(senza oggetto)')}</b>${p.esempio ? ' <span class="chip ex">Esempio</span>' : ''}<br><span class="mut">${esc(p.beneficiario || '')}</span></td>
+      <td class="wide"><b>${esc(p.oggetto || '(senza oggetto)')}</b>${p.esempio ? ' <span class="badge badge-neutro badge-es">Esempio</span>' : ''}<br><span class="mut">${esc(p.beneficiario || '')}</span></td>
       <td>${esc(TIPI[p.tipo]?.n || '')}</td>
       <td class="r num">${eur(p.importo)}</td>
       <td>${esc(p.esercizio || '—')} · ${esc(p.capitolo || '—')}</td>
@@ -236,7 +236,7 @@ function renderGuida() {
   const el = $('#v-guida'); if (el.dataset.done) return; el.dataset.done = '1';
   el.innerHTML = `<div class="section-h"><h2>Guida operativa</h2><p>Le quattro fasi, i termini da presidiare e le liste di controllo per tipologia.</p></div>
   <div class="guide"><article>
-    ${FASI.map((f, i) => `<div class="ph"><h3><span class="chip acc num">${i + 1}</span>${esc(f.n)}</h3><p>${esc(f.d)}</p></div>`).join('')}
+    ${FASI.map((f, i) => `<div class="ph"><h3><span class="badge text-bg-primary num">${i + 1}</span>${esc(f.n)}</h3><p>${esc(f.d)}</p></div>`).join('')}
     <p class="note">Le liste di controllo sono un supporto operativo e non sostituiscono la disciplina vigente, le circolari della Ragioneria generale dello Stato e le indicazioni dell'Ufficio centrale di bilancio. Gli adempimenti segnati come obbligatori sono quelli senza i quali la pratica normalmente non può passare alla fase successiva; l'applicazione consente comunque di avanzare, annotandolo nella cronologia. Le liste si modificano nel file <code>static/modello.json</code> sul server.</p>
     <h3>Liste di controllo per tipologia</h3><p class="mut">Apri una voce per leggere come si fa. Sono le stesse spiegazioni della risposta «No, spiegami» nella procedura guidata.</p>
     ${ALL.map(k => `<details class="tipo"><summary>${esc(TIPI[k].n)} <span>· ${esc(TIPI[k].s)}</span></summary>
@@ -256,46 +256,46 @@ function renderGuida() {
 
 async function renderUtenti() {
   const el = $('#v-utenti'); if (!isAdmin()) { el.innerHTML = ''; return; }
-  const sec = S.segreto ? `<div class="secret" role="status"><b>${esc(S.segreto.titolo)}</b><span>Comunica questa password provvisoria all'interessato per un canale riservato. Al primo accesso dovrà sceglierne una personale. Non sarà più mostrata.</span><code>${esc(S.segreto.pw)}</code><div class="actions tight"><button class="btn sm" data-act="copia" type="button">Copia</button><button class="btn sm ghost" data-act="chiudi-segreto" type="button">Fatto</button></div></div>` : '';
+  const sec = S.segreto ? `<div class="secret alert alert-warning" role="status"><b>${esc(S.segreto.titolo)}</b><span>Comunica questa password provvisoria all'interessato per un canale riservato. Al primo accesso dovrà sceglierne una personale. Non sarà più mostrata.</span><code>${esc(S.segreto.pw)}</code><div class="actions tight"><button class="btn btn-outline-primary btn-sm" data-act="copia" type="button">Copia</button><button class="btn btn-link btn-sm" data-act="chiudi-segreto" type="button">Fatto</button></div></div>` : '';
   const rows = [...S.utenti.values()].map(u => `<tr>
     <td><b>${esc(u.nome)}</b>${u.id === S.me.id ? ' <span class="mut">(tu)</span>' : ''}<br><span class="mut num sm">${esc(u.username || '')}</span></td>
-    <td><select class="inp" data-ruolo="${u.id}" aria-label="Ruolo di ${esc(u.nome)}" ${u.id === S.me.id ? 'disabled' : ''}>${Object.entries(RUOLI).map(([k, v]) => `<option value="${k}" ${u.ruolo === k ? 'selected' : ''}>${v}</option>`).join('')}</select></td>
-    <td>${u.attivo ? '<span class="chip ok">Attiva</span>' : '<span class="chip">Disattivata</span>'}</td>
-    <td><div class="actions tight">${u.id !== S.me.id ? `<button class="btn sm" data-attiva="${u.id}" data-val="${u.attivo ? 0 : 1}" type="button">${u.attivo ? 'Disattiva' : 'Riattiva'}</button><button class="btn sm" data-reset="${u.id}" type="button">Reimposta password</button>` : ''}</div></td></tr>`).join('');
+    <td><select class="form-select" data-ruolo="${u.id}" aria-label="Ruolo di ${esc(u.nome)}" ${u.id === S.me.id ? 'disabled' : ''}>${Object.entries(RUOLI).map(([k, v]) => `<option value="${k}" ${u.ruolo === k ? 'selected' : ''}>${v}</option>`).join('')}</select></td>
+    <td>${u.attivo ? '<span class="badge text-bg-success">Attiva</span>' : '<span class="badge badge-neutro">Disattivata</span>'}</td>
+    <td><div class="actions tight">${u.id !== S.me.id ? `<button class="btn btn-outline-primary btn-sm" data-attiva="${u.id}" data-val="${u.attivo ? 0 : 1}" type="button">${u.attivo ? 'Disattiva' : 'Riattiva'}</button><button class="btn btn-outline-primary btn-sm" data-reset="${u.id}" type="button">Reimposta password</button>` : ''}</div></td></tr>`).join('');
   el.innerHTML = `<div class="section-h"><h2>Utenti e registro</h2><p>Gestisci chi accede all'applicazione e consulta il registro di tutte le operazioni.</p></div>
   <div class="grid2"><div class="panel"><h3>Utenze</h3>${sec}
-    <div class="tbl-wrap"><table class="compact"><thead><tr><th>Utente</th><th>Ruolo</th><th>Stato</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>
+    <div class="tbl-wrap"><table class="table compact"><thead><tr><th>Utente</th><th>Ruolo</th><th>Stato</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>
     <p class="note">Amministratore: tutto, compresa la gestione delle utenze e l'eliminazione delle pratiche. Operatore: crea e aggiorna le pratiche. Consultazione: sola lettura.</p></div>
   <form class="panel" id="f-utente"><h3>Nuova utenza</h3>
-    <div class="fld"><label for="u-nome">Nome e cognome</label><input id="u-nome" required maxlength="80"></div>
-    <div class="fld"><label for="u-user">Nome utente</label><input id="u-user" required pattern="[A-Za-z0-9._\\-]{3,40}" placeholder="es. m.rossi"><span class="h">3-40 caratteri: lettere, cifre, punto, trattino.</span></div>
-    <div class="fld"><label for="u-ruolo">Ruolo</label><select id="u-ruolo">${Object.entries(RUOLI).map(([k, v]) => `<option value="${k}" ${k === 'operatore' ? 'selected' : ''}>${v}</option>`).join('')}</select></div>
-    <button class="btn primary" type="submit">Crea utenza</button></form></div>
-  <div class="panel mt12"><h3>Registro delle operazioni</h3><p class="mut sm">Ultime 500 operazioni, comprese quelle sulle utenze e sulle pratiche eliminate.</p><div class="tbl-wrap"><table class="compact"><thead><tr><th>Data e ora</th><th>Utente</th><th>Pratica</th><th>Operazione</th></tr></thead><tbody id="reg-body"><tr><td colspan="4" class="mut">Caricamento…</td></tr></tbody></table></div></div>`;
+    <div class="fld"><label for="u-nome">Nome e cognome</label><input class="form-control" id="u-nome" required maxlength="80"></div>
+    <div class="fld"><label for="u-user">Nome utente</label><input class="form-control" id="u-user" required pattern="[A-Za-z0-9._\\-]{3,40}" placeholder="es. m.rossi"><span class="h">3-40 caratteri: lettere, cifre, punto, trattino.</span></div>
+    <div class="fld"><label for="u-ruolo">Ruolo</label><select class="form-select" id="u-ruolo">${Object.entries(RUOLI).map(([k, v]) => `<option value="${k}" ${k === 'operatore' ? 'selected' : ''}>${v}</option>`).join('')}</select></div>
+    <button class="btn btn-primary" type="submit">Crea utenza</button></form></div>
+  <div class="panel mt12"><h3>Registro delle operazioni</h3><p class="mut sm">Ultime 500 operazioni, comprese quelle sulle utenze e sulle pratiche eliminate.</p><div class="tbl-wrap"><table class="table compact"><thead><tr><th>Data e ora</th><th>Utente</th><th>Pratica</th><th>Operazione</th></tr></thead><tbody id="reg-body"><tr><td colspan="4" class="mut">Caricamento…</td></tr></tbody></table></div></div>`;
   try {
     const reg = await api('GET', '/api/registro');
     const body = $('#reg-body'); if (!body) return;
-    body.innerHTML = reg.map(r => { const p = r.pratica_id && S.pratiche.get(r.pratica_id); return `<tr><td class="num sm">${fmtTs(r.ts * 1000)}</td><td>${r.utente_id == null ? '<span class="mut">sistema</span>' : who(r.utente_id)}</td><td>${p ? `<button class="btn sm ghost" data-open="${esc(p.id)}" type="button">${esc((p.oggetto || '').slice(0, 60))}</button>` : `<span class="mut num sm">${esc(r.pratica_id || '')}</span>`}</td><td>${esc(r.msg)}</td></tr>`; }).join('') || '<tr><td colspan="4" class="mut">Nessuna operazione.</td></tr>';
+    body.innerHTML = reg.map(r => { const p = r.pratica_id && S.pratiche.get(r.pratica_id); return `<tr><td class="num sm">${fmtTs(r.ts * 1000)}</td><td>${r.utente_id == null ? '<span class="mut">sistema</span>' : who(r.utente_id)}</td><td>${p ? `<button class="btn btn-link btn-sm" data-open="${esc(p.id)}" type="button">${esc((p.oggetto || '').slice(0, 60))}</button>` : `<span class="mut num sm">${esc(r.pratica_id || '')}</span>`}</td><td>${esc(r.msg)}</td></tr>`; }).join('') || '<tr><td colspan="4" class="mut">Nessuna operazione.</td></tr>';
   } catch (e) { if (e.code) toast(e.message); }
 }
 
 /* ---------------- pannello pratica ---------------- */
-function openDrawer(id) { S.modo = 'guida'; S.wizIdx = null; S.wizSpiega = false; S.wizRiep = false; S.wizIntro = null; S.open = id; S.newMode = false; S.formDirty = false; S.advWarn = false; S.delAsk = false; S.sospAsk = false; S.det = null; const p = S.pratiche.get(id); S.viewFase = Math.min(p?.fase ?? 0, 3); showDrawer(); renderDrawer(true); caricaDettaglio(id); }
+function openDrawer(id) { S.saltaAsk = false; S.modo = 'guida'; S.wizIdx = null; S.wizSpiega = false; S.wizRiep = false; S.wizIntro = null; S.open = id; S.newMode = false; S.formDirty = false; S.advWarn = false; S.delAsk = false; S.sospAsk = false; S.det = null; const p = S.pratiche.get(id); S.viewFase = Math.min(p?.fase ?? 0, 3); showDrawer(); renderDrawer(true); caricaDettaglio(id); }
 function openNew() { S.open = null; S.newMode = true; showDrawer(); renderNew(); }
 function showDrawer() { $('#drawer').hidden = false; $('#scrim').hidden = false; document.body.style.overflow = 'hidden'; }
 function closeDrawer() { chiudiAppr(); S.open = null; S.newMode = false; S.det = null; $('#drawer').hidden = true; $('#scrim').hidden = true; document.body.style.overflow = ''; }
 
 function renderNew() {
   const anno = new Date().getFullYear();
-  $('#drawer').innerHTML = `<div class="dr-head"><div class="t"><span class="tag">Nuova pratica</span><h2 id="dr-title">Registra una spesa</h2></div><button class="btn ghost" data-act="close" aria-label="Chiudi">✕</button></div>
+  $('#drawer').innerHTML = `<div class="dr-head"><div class="t"><span class="tag">Nuova pratica</span><h2 id="dr-title">Registra una spesa</h2></div><button class="btn btn-link" data-act="close" aria-label="Chiudi">✕</button></div>
   <div class="dr-body"><form class="box form" id="new-form">
     <div class="tipi" role="radiogroup" aria-label="Tipologia">${ALL.map((k, i) => `<label><input type="radio" name="tipo" value="${k}" ${i === 0 ? 'checked' : ''}><span><b>${esc(TIPI[k].n)}</b><span>${esc(TIPI[k].s)}</span></span></label>`).join('')}</div>
-    <div class="fld full"><label for="n-oggetto">Oggetto</label><input id="n-oggetto" required maxlength="500" placeholder="Es. Fornitura di materiale di cancelleria"></div>
-    <div class="fld"><label for="n-benef">Beneficiario</label><input id="n-benef" maxlength="500"></div>
-    <div class="fld"><label for="n-imp">Importo totale (€)</label><input id="n-imp" inputmode="decimal" placeholder="0,00"></div>
-    <div class="fld"><label for="n-es">Esercizio</label><input id="n-es" value="${anno}"></div>
-    <div class="fld"><label for="n-cap">Capitolo / piano gestionale</label><input id="n-cap" maxlength="500"></div>
-    <div class="actions span"><button class="btn primary" type="submit">Crea pratica</button><button class="btn" type="button" data-act="close">Annulla</button></div>
+    <div class="fld full"><label for="n-oggetto">Oggetto</label><input class="form-control" id="n-oggetto" required maxlength="500" placeholder="Es. Fornitura di materiale di cancelleria"></div>
+    <div class="fld"><label for="n-benef">Beneficiario</label><input class="form-control" id="n-benef" maxlength="500"></div>
+    <div class="fld"><label for="n-imp">Importo totale (€)</label><input class="form-control" id="n-imp" inputmode="decimal" placeholder="0,00"></div>
+    <div class="fld"><label for="n-es">Esercizio</label><input class="form-control" id="n-es" value="${anno}"></div>
+    <div class="fld"><label for="n-cap">Capitolo / piano gestionale</label><input class="form-control" id="n-cap" maxlength="500"></div>
+    <div class="actions span"><button class="btn btn-primary" type="submit">Crea pratica</button><button class="btn btn-outline-primary" type="button" data-act="close">Annulla</button></div>
   </form></div>`;
   $('#n-oggetto').focus();
 }
@@ -303,7 +303,7 @@ function renderNew() {
 function renderDrawer(full) {
   const id = S.open, d = $('#drawer');
   const p = S.det || S.pratiche.get(id);
-  if (!p) { d.innerHTML = '<div class="dr-head"><div class="t"><h2 id="dr-title">Pratica non più disponibile</h2><p class="mut">È stata eliminata da un collega.</p></div><button class="btn ghost" data-act="close" aria-label="Chiudi">✕</button></div>'; return; }
+  if (!p) { d.innerHTML = '<div class="dr-head"><div class="t"><h2 id="dr-title">Pratica non più disponibile</h2><p class="mut">È stata eliminata da un collega.</p></div><button class="btn btn-link" data-act="close" aria-label="Chiudi">✕</button></div>'; return; }
   if (full || !$('#dr-step', d)) {
     d.innerHTML = `<div class="dr-head" id="dr-head"></div><div class="dr-body">
       <div class="box"><div id="dr-step"></div></div>
@@ -315,12 +315,12 @@ function renderDrawer(full) {
   }
   const fase = p.fase ?? 0, s = scadenza(p), r = residuo(p);
   $('#dr-head').innerHTML = `<div class="t"><span class="tag">${esc(TIPI[p.tipo]?.n || '')} · ${faseNome(fase)}</span><h2 id="dr-title">${esc(p.oggetto || '(senza oggetto)')}</h2>
-    <div class="chips">${p.esempio ? '<span class="chip ex">Esempio</span>' : ''}${scadChip(p)}<span class="chip num">${eur(p.importo)}</span>${p.beneficiario ? `<span class="chip">${esc(p.beneficiario)}</span>` : ''}</div></div>
-    <button class="btn ghost" data-act="close" aria-label="Chiudi">✕</button>`;
+    <div class="chips">${p.esempio ? '<span class="badge badge-neutro badge-es">Esempio</span>' : ''}${scadChip(p)}<span class="badge badge-neutro num">${eur(p.importo)}</span>${p.beneficiario ? `<span class="badge badge-neutro">${esc(p.beneficiario)}</span>` : ''}</div></div>
+    <button class="btn btn-link" data-act="close" aria-label="Chiudi">✕</button>`;
 
   const vf = S.viewFase ?? Math.min(fase, 3);
-  $('#dr-step').innerHTML = `<div class="stepper">${FASI.map((f, i) => { const cls = i < fase ? 'done' : i === fase ? 'cur' : ''; return `<button class="step ${cls} ${i === vf ? 'sel' : ''}" data-vf="${i}" type="button"><span class="dot">${i < fase ? '✓' : i + 1}</span><span class="lb">${esc(f.n)}</span></button>`; }).join('')}
-    <div class="step ${fase >= CONCLUSA ? 'done' : ''}"><span class="dot">${fase >= CONCLUSA ? '✓' : '●'}</span><span class="lb">Conclusa</span></div></div>`;
+  $('#dr-step').innerHTML = `<div class="stepper">${FASI.map((f, i) => { const cls = i < fase ? 'done' : i === fase ? 'cur' : ''; return `<button class="fstep ${cls} ${i === vf ? 'sel' : ''}" data-vf="${i}" type="button"><span class="dot">${i < fase ? '✓' : i + 1}</span><span class="lb">${esc(f.n)}</span></button>`; }).join('')}
+    <div class="fstep ${fase >= CONCLUSA ? 'done' : ''}"><span class="dot">${fase >= CONCLUSA ? '✓' : '●'}</span><span class="lb">Conclusa</span></div></div>`;
 
   const dis = canWrite() && S.det ? '' : 'disabled';
   const guidata = S.modo === 'guida' && vf === Math.min(fase, 3) && fase < CONCLUSA;
@@ -333,23 +333,24 @@ function renderDrawer(full) {
   let si = `<h3>Situazione</h3><dl class="dl">
     <dt>Scadenza</dt><dd>${s ? `<b class="num">${fmtD(s.d)}</b>${r != null ? ` · ${r < 0 ? `<span class="txt-bad">scaduta da ${-r} giorni</span>` : r === 0 ? 'oggi' : `tra ${r} giorni`}` : ''}<br><span class="mut sm">${esc(s.base)}</span>` : '<span class="mut">Non calcolabile: inserisci nei dati la data di ricezione su SdI, la notifica del titolo o una scadenza manuale.</span>'}</dd>
     ${rif != null ? `<dt>Esito fattura</dt><dd>${rif < 0 ? `<span class="txt-bad">termine di 15 giorni superato da ${-rif} gg</span>` : `accettare o rifiutare entro ${rif} giorni`}</dd>` : ''}
-    <dt>Assegnata a</dt><dd>${canWrite() ? `<select class="inp" id="as-sel" aria-label="Assegnatario" ${dis}><option value="">Nessuno</option>${assegnabili.map(u => `<option value="${u.id}" ${p.assegnatario === u.id ? 'selected' : ''}>${esc(u.nome)}${u.id === S.me.id ? ' (tu)' : ''}</option>`).join('')}${p.assegnatario != null && !assegnabili.some(u => u.id === p.assegnatario) ? `<option value="${p.assegnatario}" selected>${who(p.assegnatario)}</option>` : ''}</select>` : who(p.assegnatario)}</dd>
-    <dt>Stato</dt><dd>${p.sospesa ? `<span class="chip warn">Sospesa</span> ${esc(p.motivoSospensione || '')}` : 'Regolare'}</dd>
+    <dt>Assegnata a</dt><dd>${canWrite() ? `<select class="form-select" id="as-sel" aria-label="Assegnatario" ${dis}><option value="">Nessuno</option>${assegnabili.map(u => `<option value="${u.id}" ${p.assegnatario === u.id ? 'selected' : ''}>${esc(u.nome)}${u.id === S.me.id ? ' (tu)' : ''}</option>`).join('')}${p.assegnatario != null && !assegnabili.some(u => u.id === p.assegnatario) ? `<option value="${p.assegnatario}" selected>${who(p.assegnatario)}</option>` : ''}</select>` : who(p.assegnatario)}</dd>
+    <dt>Stato</dt><dd>${p.sospesa ? `<span class="badge text-bg-warning">Sospesa</span> ${esc(p.motivoSospensione || '')}` : 'Regolare'}</dd>
   </dl>`;
   if (fase < CONCLUSA) {
-    if (p.sospesa) si += `<div class="actions w"><button class="btn sm" data-act="riprendi" type="button" ${dis}>Riprendi la pratica</button></div>`;
-    else if (S.sospAsk) si += `<div class="warnbox w"><label for="sosp-m"><b>Motivo della sospensione</b></label><input class="inp full-w mt6" id="sosp-m" maxlength="300" placeholder="Es. DURC irregolare, contestazione della fornitura, nota di credito attesa"><div class="actions"><button class="btn sm" data-act="sosp-ok" type="button">Sospendi</button><button class="btn sm ghost" data-act="sosp-no" type="button">Annulla</button></div></div>`;
-    else si += `<div class="actions w"><button class="btn sm" data-act="sosp" type="button" ${dis}>Sospendi la pratica</button></div>`;
+    if (p.sospesa) si += `<div class="actions w"><button class="btn btn-outline-primary btn-sm" data-act="riprendi" type="button" ${dis}>Riprendi la pratica</button></div>`;
+    else if (S.sospAsk) si += `<div class="alert alert-warning warnbox w" role="alert"><label for="sosp-m"><b>Motivo della sospensione</b></label><input class="form-control mt6" id="sosp-m" maxlength="300" placeholder="Es. DURC irregolare, contestazione della fornitura, nota di credito attesa"><div class="actions"><button class="btn btn-outline-primary btn-sm" data-act="sosp-ok" type="button">Sospendi</button><button class="btn btn-link btn-sm" data-act="sosp-no" type="button">Annulla</button></div></div>`;
+    else si += `<div class="actions w"><button class="btn btn-outline-primary btn-sm" data-act="sosp" type="button" ${dis}>Sospendi la pratica</button></div>`;
   }
   $('#dr-sit').innerHTML = si;
 
   if (full || !S.formDirty) renderForm(p);
 
   $('#dr-log').innerHTML = S.det ? (S.det.log.map(l => `<li><time class="num">${fmtTs(l.ts * 1000)}</time><span>${esc(l.msg)} <span class="mut">· ${l.utente_id == null ? 'sistema' : who(l.utente_id)}</span></span></li>`).join('') || '<li><span>Nessuna attività.</span></li>') : '<li><span class="mut">Caricamento…</span></li>';
-  $('#dr-del').innerHTML = S.delAsk ? '<h3>Eliminare la pratica?</h3><p class="ph-desc">L\'eliminazione è definitiva per tutti i colleghi. Nel registro delle operazioni resta traccia dell\'eliminazione.</p><div class="actions"><button class="btn danger" data-act="del-ok" type="button">Elimina definitivamente</button><button class="btn" data-act="del-no" type="button">Annulla</button></div>' : '<button class="btn sm danger" data-act="del" type="button">Elimina pratica</button>';
+  $('#dr-del').innerHTML = S.delAsk ? '<h3>Eliminare la pratica?</h3><p class="ph-desc">L\'eliminazione è definitiva per tutti i colleghi. Nel registro delle operazioni resta traccia dell\'eliminazione.</p><div class="actions"><button class="btn btn-outline-danger" data-act="del-ok" type="button">Elimina definitivamente</button><button class="btn btn-outline-primary" data-act="del-no" type="button">Annulla</button></div>' : '<button class="btn btn-outline-danger btn-sm" data-act="del" type="button">Elimina pratica</button>';
 }
 
 /* ---------------- procedura guidata ---------------- */
+const fattoTxt = c => `${c.gia ? 'Registrata come già svolta' : 'Fatto'} il ${fmtTs(c.at)} da ${who(c.by)}`;
 const statoVoce = (p, it) => p.check?.[it.id] ? 'fatto' : p.dafare?.[it.id] ? 'dafare' : 'aperto';
 function aiutoHtml(it) {
   const h = it.aiuto; if (!h) return '<p class="mut">Spiegazione non disponibile per questo adempimento.</p>';
@@ -363,8 +364,8 @@ function aiutoHtml(it) {
 }
 function avanzaHtml(p) {
   const fase = p.fase ?? 0, miss = mancanti(p, fase), dis = canWrite() && S.det ? '' : 'disabled';
-  let h = `<div class="actions w"><button class="btn primary" data-act="adv" type="button" ${dis}>${fase === 3 ? 'Concludi la pratica' : `Passa a ${esc(FASI[fase + 1].n)}`}</button>${fase > 0 ? `<button class="btn" data-act="back" type="button" ${dis}>Torna a ${esc(FASI[fase - 1].n)}</button>` : ''}</div>`;
-  if (S.advWarn && miss.length) h += `<div class="warnbox w"><b>Mancano ${miss.length} adempimenti obbligatori:</b><ul>${miss.map(i => `<li>${esc(i.t)}</li>`).join('')}</ul><div class="actions tight"><button class="btn sm" data-act="adv-force" type="button">Avanza comunque</button><button class="btn sm ghost" data-act="adv-cancel" type="button">Annulla</button></div></div>`;
+  let h = `<div class="actions w"><button class="btn btn-primary" data-act="adv" type="button" ${dis}>${fase === 3 ? 'Concludi la pratica' : `Passa a ${esc(FASI[fase + 1].n)}`}</button>${fase > 0 ? `<button class="btn btn-outline-primary" data-act="back" type="button" ${dis}>Torna a ${esc(FASI[fase - 1].n)}</button>` : ''}</div>`;
+  if (S.advWarn && miss.length) h += `<div class="alert alert-warning warnbox w" role="alert"><b>Mancano ${miss.length} adempimenti obbligatori:</b><ul>${miss.map(i => `<li>${esc(i.t)}</li>`).join('')}</ul><div class="actions tight"><button class="btn btn-outline-primary btn-sm" data-act="adv-force" type="button">Avanza comunque</button><button class="btn btn-link btn-sm" data-act="adv-cancel" type="button">Annulla</button></div></div>`;
   return h;
 }
 function renderGuidata(p) {
@@ -382,13 +383,13 @@ function renderGuidata(p) {
   if (S.wizRiep || idx < 0) {
     const miss = mancanti(p, fase);
     h += `<div class="riep"><h4>Riepilogo della fase</h4><ul>${lst.map((it, i) => { const st = statoVoce(p, it), c = p.check?.[it.id];
-      return `<li class="r-${st}"><span class="chip ${st === 'fatto' ? 'ok' : st === 'dafare' ? 'warn' : ''}">${st === 'fatto' ? 'Fatto' : st === 'dafare' ? 'Da fare' : 'Senza risposta'}</span>
-        <div><span>${esc(it.t)}</span>${it.r ? '<span class="req">obbligatorio</span>' : ''}${c ? `<span class="by">il ${fmtTs(c.at)} da ${who(c.by)}</span>` : ''}
-        <div class="actions tight r-act">${st !== 'fatto' ? `<button class="btn sm" data-wiz="si" data-i="${i}" type="button" ${ro}>L'ho fatto</button>` : ''}<button class="btn sm ghost" data-appr="${fase}:${i}" type="button">Approfondisci</button></div></div></li>`; }).join('')}</ul>
-      ${miss.length ? `<p class="warnbox">Per passare alla fase successiva mancano <b>${miss.length}</b> adempimenti obbligatori. Puoi completarli ora oppure avanzare comunque: resterà annotato nella cronologia.</p>` : '<p class="okbox">Tutti gli adempimenti obbligatori di questa fase sono fatti.</p>'}
+      return `<li class="r-${st}"><span class="badge ${st === 'fatto' ? 'text-bg-success' : st === 'dafare' ? 'text-bg-warning' : 'badge-neutro'}">${st === 'fatto' ? 'Fatto' : st === 'dafare' ? 'Da fare' : 'Senza risposta'}</span>
+        <div><span>${esc(it.t)}</span>${it.r ? '<span class="req">obbligatorio</span>' : ''}${c ? `<span class="by">${fattoTxt(c)}</span>` : ''}
+        <div class="actions tight r-act">${st !== 'fatto' ? `<button class="btn btn-outline-primary btn-sm" data-wiz="si" data-i="${i}" type="button" ${ro}>L'ho fatto</button>` : ''}<button class="btn btn-link btn-sm" data-appr="${fase}:${i}" type="button">Approfondisci</button></div></div></li>`; }).join('')}</ul>
+      ${miss.length ? `<p class="alert alert-warning warnbox" role="status">Per passare alla fase successiva mancano <b>${miss.length}</b> adempimenti obbligatori. Puoi completarli ora oppure avanzare comunque: resterà annotato nella cronologia.</p>` : '<p class="alert alert-success okbox" role="status">Tutti gli adempimenti obbligatori di questa fase sono fatti.</p>'}
       ${avanzaHtml(p)}
-      ${n.aperto ? '<div class="actions"><button class="btn ghost" data-wiz="domande" type="button">Riprendi le domande</button></div>' : ''}</div>`;
-    return h + `<div class="g-foot"><button class="btn sm ghost" data-wiz="intro" type="button">Come si svolge questa fase</button><button class="btn sm ghost" data-wiz="elenco" type="button">Vedi l'elenco completo della fase</button></div>`;
+      ${n.aperto ? '<div class="actions"><button class="btn btn-link" data-wiz="domande" type="button">Riprendi le domande</button></div>' : ''}</div>`;
+    return h + `<div class="g-foot"><button class="btn btn-link btn-sm" data-wiz="intro" type="button">Come si svolge questa fase</button><button class="btn btn-link btn-sm" data-wiz="elenco" type="button">Vedi l'elenco completo della fase</button></div>${saltaHtml(p)}`;
   }
 
   const it = lst[idx], st = statoVoce(p, it), c = p.check?.[it.id];
@@ -400,11 +401,20 @@ function renderGuidata(p) {
     <p class="q-deep"><button class="lnk" data-appr="${fase}:${idx}" type="button">Approfondisci questa sottofase ›</button></p>
     ${st === 'fatto' ? `<p class="q-now">Già segnato come fatto il ${fmtTs(c.at)} da ${who(c.by)}.</p>` : st === 'dafare' ? '<p class="q-now">Segnato come da fare.</p>' : ''}
     ${S.wizSpiega ? `<div class="spiega">${aiutoHtml(it)}
-        <div class="actions"><button class="btn primary" data-wiz="si" type="button" ${ro}>Fatto, andiamo avanti</button><button class="btn" data-wiz="so" type="button" ${ro}>Lo farò dopo</button></div></div>`
-      : `<div class="q-btns"><button class="btn primary" data-wiz="si" type="button" ${ro}>Sì</button><button class="btn" data-wiz="so" type="button" ${ro}>No, ma so come si fa</button><button class="btn" data-wiz="spiega" type="button">No, spiegami</button></div>`}
+        <div class="actions"><button class="btn btn-primary" data-wiz="si" type="button" ${ro}>Fatto, andiamo avanti</button><button class="btn btn-outline-primary" data-wiz="so" type="button" ${ro}>Lo farò dopo</button></div></div>`
+      : `<div class="q-btns"><button class="btn btn-primary" data-wiz="si" type="button" ${ro}>Sì</button><button class="btn btn-outline-primary" data-wiz="so" type="button" ${ro}>No, ma so come si fa</button><button class="btn btn-outline-primary" data-wiz="spiega" type="button">No, spiegami</button></div>`}
   </div>
-  <div class="g-foot"><button class="btn sm ghost" data-wiz="prev" type="button" ${idx === 0 ? 'disabled' : ''}>← Domanda precedente</button><button class="btn sm ghost" data-wiz="riep" type="button">Riepilogo della fase</button><button class="btn sm ghost" data-wiz="intro" type="button">Come si svolge questa fase</button><button class="btn sm ghost" data-wiz="elenco" type="button">Elenco completo</button></div>`;
+  <div class="g-foot"><button class="btn btn-link btn-sm" data-wiz="prev" type="button" ${idx === 0 ? 'disabled' : ''}>← Domanda precedente</button><button class="btn btn-link btn-sm" data-wiz="riep" type="button">Riepilogo della fase</button><button class="btn btn-link btn-sm" data-wiz="intro" type="button">Come si svolge questa fase</button><button class="btn btn-link btn-sm" data-wiz="elenco" type="button">Elenco completo</button></div>${saltaHtml(p)}`;
   return h;
+}
+function saltaHtml(p) {
+  if (!canWrite() || !S.det) return '';
+  const fase = p.fase ?? 0, lst = TIPI[p.tipo].check[fase], aperte = lst.filter(it => !p.check?.[it.id]).length;
+  const dopo = fase >= FASI.length - 1 ? 'la pratica sarà conclusa' : `la pratica passerà alla fase ${esc(FASI[fase + 1].n)}`;
+  if (!S.saltaAsk) return `<div class="salta"><p class="mut">Questa fase è già stata svolta, per esempio prima di registrare la pratica qui?</p><button class="btn btn-outline-primary btn-sm" data-wiz="salta" type="button">Salta la fase: è già stata svolta</button></div>`;
+  const frase = aperte ? `Le ${aperte} sottofasi non ancora spuntate saranno registrate come già svolte a tuo nome e ${dopo}.` : `${dopo[0].toUpperCase() + dopo.slice(1)}.`;
+  return `<div class="salta"><div class="alert alert-warning mb-0" role="alert"><p><b>Confermi che la fase «${esc(FASI[fase].n)}» è già stata svolta?</b></p><p>${frase} L'operazione resta nella cronologia della pratica.</p>
+    <div class="actions tight"><button class="btn btn-primary btn-sm" data-wiz="salta-ok" type="button">Sì, salta la fase</button><button class="btn btn-link btn-sm" data-wiz="salta-no" type="button">Annulla</button></div></div></div>`;
 }
 function renderIntro(p, lst, iniziata) {
   const fase = p.fase ?? 0, it = TIPI[p.tipo].intro?.[fase];
@@ -426,7 +436,8 @@ function renderIntro(p, lst, iniziata) {
         <section class="i-box"><h4>Tempi e scadenze</h4>${lista(it.tempi)}</section>
       </div>` : ''}
       ${qui.length ? `<div class="i-qui"><h4>Per questa pratica</h4><ul>${qui.map(x => `<li>${x}</li>`).join('')}</ul></div>` : ''}
-      <div class="actions"><button class="btn primary" data-wiz="inizia" type="button">${iniziata ? 'Riprendi le domande' : 'Inizia le domande'}</button><button class="btn ghost" data-wiz="elenco" type="button">Vedi l'elenco completo</button></div>
+      <div class="actions"><button class="btn btn-primary" data-wiz="inizia" type="button">${iniziata ? 'Riprendi le domande' : 'Inizia le domande'}</button><button class="btn btn-link" data-wiz="elenco" type="button">Vedi l'elenco completo</button></div>
+      ${saltaHtml(p)}
     </div>`;
 }
 /* ---------------- scheda di approfondimento della sottofase ---------------- */
@@ -451,14 +462,14 @@ function renderAppr() {
   const corrente = fase === (p.fase ?? 0) && fase < CONCLUSA;
   el.innerHTML = `<header class="appr-h"><div><span class="tag">Approfondimento · ${esc(FASI[fase].n)} · sottofase ${idx + 1} di ${lst.length}</span>
       <h2 id="appr-title">${esc(it.t)}</h2>
-      <div class="chips"><span class="chip">${it.r ? 'Obbligatoria' : 'Se pertinente'}</span><span class="chip ${st === 'fatto' ? 'ok' : st === 'dafare' ? 'warn' : ''}">${st === 'fatto' ? 'Fatta' : st === 'dafare' ? 'Da fare' : 'Senza risposta'}</span>${c ? `<span class="mut sm">il ${fmtTs(c.at)} da ${who(c.by)}</span>` : ''}</div></div>
-      <button class="btn ghost appr-x" data-ap="chiudi" type="button" aria-label="Chiudi l'approfondimento">✕</button></header>
+      <div class="chips"><span class="badge badge-neutro">${it.r ? 'Obbligatoria' : 'Se pertinente'}</span><span class="badge ${st === 'fatto' ? 'text-bg-success' : st === 'dafare' ? 'text-bg-warning' : 'badge-neutro'}">${st === 'fatto' ? 'Fatta' : st === 'dafare' ? 'Da fare' : 'Senza risposta'}</span>${c ? `<span class="mut sm">${fattoTxt(c)}</span>` : ''}</div></div>
+      <button class="btn btn-link appr-x" data-ap="chiudi" type="button" aria-label="Chiudi l'approfondimento">✕</button></header>
     <div class="appr-b">
       <h4>A cosa serve</h4>${aiutoHtml(it)}
     </div>
     <footer class="appr-f">
-      <div class="actions tight">${st !== 'fatto' ? `<button class="btn primary w" data-ap="si" type="button" ${ro}>L'ho fatto</button>` : ''}${st === 'aperto' ? `<button class="btn w" data-ap="so" type="button" ${ro}>Lo farò dopo</button>` : ''}${corrente && S.modo === 'guida' ? '<button class="btn ghost" data-ap="vai" type="button">Vai a questa domanda</button>' : ''}</div>
-      <div class="actions tight appr-nav"><button class="btn sm ghost" data-ap="prev" type="button" ${idx === 0 ? 'disabled' : ''}>← Precedente</button><button class="btn sm ghost" data-ap="next" type="button" ${idx === lst.length - 1 ? 'disabled' : ''}>Successiva →</button><button class="btn sm" data-ap="chiudi" type="button">Chiudi</button></div>
+      <div class="actions tight">${st !== 'fatto' ? `<button class="btn btn-primary w" data-ap="si" type="button" ${ro}>L'ho fatto</button>` : ''}${st === 'aperto' ? `<button class="btn btn-outline-primary w" data-ap="so" type="button" ${ro}>Lo farò dopo</button>` : ''}${corrente && S.modo === 'guida' ? '<button class="btn btn-link" data-ap="vai" type="button">Vai a questa domanda</button>' : ''}</div>
+      <div class="actions tight appr-nav"><button class="btn btn-link btn-sm" data-ap="prev" type="button" ${idx === 0 ? 'disabled' : ''}>← Precedente</button><button class="btn btn-link btn-sm" data-ap="next" type="button" ${idx === lst.length - 1 ? 'disabled' : ''}>Successiva →</button><button class="btn btn-outline-primary btn-sm" data-ap="chiudi" type="button">Chiudi</button></div>
     </footer>`;
 }
 async function azioneAppr(a) {
@@ -475,12 +486,12 @@ async function azioneAppr(a) {
 function renderElenco(p, vf) {
   const fase = p.fase ?? 0, lst = TIPI[p.tipo]?.check[vf] || [], dis = canWrite() && S.det ? '' : 'disabled';
   const corrente = vf === Math.min(fase, 3) && fase < CONCLUSA;
-  let ph = `<h3>Fase ${vf + 1} · ${esc(FASI[vf].n)}${corrente ? '' : ' <span class="chip">consultazione</span>'}</h3><p class="ph-desc">${esc(FASI[vf].d)}</p>`;
-  if (corrente) ph += '<div class="actions tight"><button class="btn sm primary" data-wiz="guida" type="button">Torna alla procedura guidata</button></div>';
+  let ph = `<h3>Fase ${vf + 1} · ${esc(FASI[vf].n)}${corrente ? '' : ' <span class="badge badge-neutro">consultazione</span>'}</h3><p class="ph-desc">${esc(FASI[vf].d)}</p>`;
+  if (corrente) ph += '<div class="actions tight"><button class="btn btn-primary btn-sm" data-wiz="guida" type="button">Torna alla procedura guidata</button></div>';
   ph += lst.map((it, i) => { const c = p.check?.[it.id], df = p.dafare?.[it.id];
-    return `<label class="chk ${c ? 'on' : ''}"><input type="checkbox" data-chk="${it.id}" ${c ? 'checked' : ''} ${dis}><span class="tx">${esc(it.t)}${it.r ? '<span class="req">obbligatorio</span>' : ''}${df && !c ? ' <span class="chip warn">Da fare</span>' : ''}</span>${it.ref ? `<span class="ref">${esc(it.ref)}</span>` : ''}${c ? `<span class="by">Fatto il ${fmtTs(c.at)} da ${who(c.by)}</span>` : ''}<span class="ref"><button class="lnk sm" data-appr="${vf}:${i}" type="button">Approfondisci ›</button></span></label>`; }).join('');
+    return `<label class="chk ${c ? 'on' : ''}"><input type="checkbox" data-chk="${it.id}" ${c ? 'checked' : ''} ${dis}><span class="tx">${esc(it.t)}${it.r ? '<span class="req">obbligatorio</span>' : ''}${df && !c ? ' <span class="badge text-bg-warning">Da fare</span>' : ''}</span>${it.ref ? `<span class="ref">${esc(it.ref)}</span>` : ''}${c ? `<span class="by">${fattoTxt(c)}</span>` : ''}<span class="ref"><button class="lnk sm" data-appr="${vf}:${i}" type="button">Approfondisci ›</button></span></label>`; }).join('');
   if (corrente) ph += avanzaHtml(p);
-  else if (fase >= CONCLUSA && vf === 3) ph += `<div class="actions w"><button class="btn" data-act="reopen" type="button" ${dis}>Riapri in fase Pagamento</button></div>`;
+  else if (fase >= CONCLUSA && vf === 3) ph += `<div class="actions w"><button class="btn btn-outline-primary" data-act="reopen" type="button" ${dis}>Riapri in fase Pagamento</button></div>`;
   return ph;
 }
 function vediFase() {
@@ -507,13 +518,13 @@ function renderForm(p) {
     if (c.tipi && !c.tipi.includes(p.tipo)) continue;
     if (c.sub) { h += `<div class="form-sub">${esc(c.sub)}</div>`; continue; }
     const v = p[c.k]; const idf = 'fd-' + c.k; let inp;
-    if (c.t === 'area') inp = `<textarea id="${idf}" data-k="${c.k}" maxlength="5000" ${ro}>${esc(v || '')}</textarea>`;
+    if (c.t === 'area') inp = `<textarea class="form-control" id="${idf}" data-k="${c.k}" maxlength="5000" ${ro}>${esc(v || '')}</textarea>`;
     else if (c.t === 'check') { h += `<div class="fld chkf full"><input type="checkbox" id="${idf}" data-k="${c.k}" ${v ? 'checked' : ''} ${ro}><label for="${idf}">${esc(c.l)}</label></div>`; continue; }
-    else if (c.t === 'num') inp = `<input id="${idf}" data-k="${c.k}" data-t="num" inputmode="decimal" value="${esc(numIn(v))}" ${ro}>`;
-    else inp = `<input id="${idf}" data-k="${c.k}" type="${c.t === 'date' ? 'date' : 'text'}" maxlength="500" value="${esc(v || '')}" ${ro}>`;
+    else if (c.t === 'num') inp = `<input class="form-control" id="${idf}" data-k="${c.k}" data-t="num" inputmode="decimal" value="${esc(numIn(v))}" ${ro}>`;
+    else inp = `<input class="form-control" id="${idf}" data-k="${c.k}" type="${c.t === 'date' ? 'date' : 'text'}" maxlength="500" value="${esc(v || '')}" ${ro}>`;
     h += `<div class="fld ${c.full ? 'full' : ''}"><label for="${idf}">${esc(c.l)}</label>${inp}${c.h ? `<span class="h">${esc(c.h)}</span>` : ''}</div>`;
   }
-  h += '</div><div class="actions w"><button class="btn primary" type="submit" ' + ro + '>Salva i dati</button><span id="form-st" class="mut sm"></span></div>';
+  h += '</div><div class="actions w"><button class="btn btn-primary" type="submit" ' + ro + '>Salva i dati</button><span id="form-st" class="mut sm"></span></div>';
   f.innerHTML = h; S.formDirty = false;
 }
 
@@ -521,7 +532,7 @@ function renderForm(p) {
 function avanza(force) {
   const p = S.det; if (!p) return; const fase = p.fase ?? 0;
   if (mancanti(p, fase).length && !force) { S.advWarn = true; renderDrawer(false); return; }
-  S.advWarn = false; S.viewFase = Math.min(fase + 1, 3); S.modo = 'guida'; S.wizIdx = null; S.wizSpiega = false; S.wizRiep = false; S.wizIntro = null;
+  S.advWarn = false; S.saltaAsk = false; S.viewFase = Math.min(fase + 1, 3); S.modo = 'guida'; S.wizIdx = null; S.wizSpiega = false; S.wizRiep = false; S.wizIntro = null;
   modifica(S.open, {azione: {tipo: 'avanza', fase_attesa: fase, forza: !!force}}).then(ok => { if (ok) vediFase(); if (ok && fase + 1 >= CONCLUSA) toast('Pratica conclusa.'); });
 }
 async function creaPratica(campi, extra = {}) {
@@ -586,6 +597,14 @@ function wiz(az, i) {
     case 'si': case 'so': rispondi(az, i); return;
     case 'spiega': case 'vai': rispondi(az, i).then(vediFase); return;
     case 'prev': { const lst = TIPI[p.tipo].check[p.fase]; let idx = S.wizIdx ?? lst.findIndex(it => statoVoce(p, it) === 'aperto'); if (idx < 0) idx = lst.length; S.wizIdx = Math.max(0, idx - 1); S.wizSpiega = false; S.wizIntro = false; break; }
+    case 'salta': S.saltaAsk = true; break;
+    case 'salta-no': S.saltaAsk = false; break;
+    case 'salta-ok': {
+      const f = p.fase ?? 0; S.saltaAsk = false; S.advWarn = false;
+      S.viewFase = Math.min(f + 1, 3); S.modo = 'guida'; S.wizIdx = null; S.wizSpiega = false; S.wizRiep = false; S.wizIntro = null;
+      modifica(S.open, {azione: {tipo: 'salta_fase', fase_attesa: f}}).then(ok => { if (ok) { vediFase(); toast(f + 1 >= CONCLUSA ? 'Fase registrata come già svolta: pratica conclusa.' : `Fase registrata come già svolta. Ora sei in ${FASI[f + 1].n}.`); } });
+      return;
+    }
     case 'riep': S.wizRiep = true; S.wizSpiega = false; S.wizIntro = false; break;
     case 'domande': case 'inizia': S.wizRiep = false; S.wizIdx = null; S.wizSpiega = false; S.wizIntro = false; renderDrawer(false); vediFase(); return;
     case 'intro': S.wizIntro = true; S.wizSpiega = false; renderDrawer(false); vediFase(); return;
@@ -669,7 +688,8 @@ const VISTE = ['cruscotto', 'pratiche', 'guida', 'utenti'];
 function route() {
   let v = location.hash.slice(1); if (!VISTE.includes(v) || (v === 'utenti' && !isAdmin())) v = 'cruscotto';
   S.view = v;
-  $$('nav.tabs a').forEach(a => { if (a.dataset.view === v) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
+  $$('.navbar-nav.tabs a').forEach(a => { const on = a.dataset.view === v; a.classList.toggle('active', on); if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
+  menu(false);
   VISTE.forEach(k => $('#v-' + k).hidden = k !== v);
   renderAll(true); window.scrollTo(0, 0);
 }
@@ -704,11 +724,20 @@ async function avvio() {
   route();
   clearInterval(S.poll); S.poll = setInterval(controllaNovita, 10000);
 }
+function menu(apri) {
+  const m = $('#menu-principale'), b = $('#menu-apri'); if (!m) return;
+  m.classList.toggle('expanded', apri); m.style.display = apri ? 'block' : '';
+  b?.setAttribute('aria-expanded', apri ? 'true' : 'false');
+}
+$('#menu-apri')?.addEventListener('click', () => menu(true));
+$('#menu-chiudi')?.addEventListener('click', () => menu(false));
+$('#menu-overlay')?.addEventListener('click', () => menu(false));
 window.addEventListener('hashchange', route);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) controllaNovita(); });
 $('#btn-new').addEventListener('click', openNew);
 $('#scrim').addEventListener('click', closeDrawer);
 $('#btn-pwd').addEventListener('click', () => showPwd(false));
+$('#menu-pwd')?.addEventListener('click', () => { menu(false); showPwd(false); });
 $('#pwd-cancel').addEventListener('click', () => schermata('scr-app'));
 $('#btn-logout').addEventListener('click', async () => { try { await api('POST', '/api/logout'); } catch { /* ignora */ } showLogin(); });
 document.addEventListener('click', e => { if (e.target.id === 'f-csv') csv(); });
@@ -717,6 +746,10 @@ document.addEventListener('click', e => { if (e.target.id === 'f-csv') csv(); })
   try {
     const m = await (await fetch('modello.json', {cache: 'no-store'})).json();
     FASI = m.FASI; TIPI = m.TIPI; ALL = m.ORDINE_TIPI; CAMPI = m.CAMPI; CONCLUSA = FASI.length;
+    try {
+      const cfg = await (await fetch('config.json', {cache: 'no-store'})).json();
+      $$('[data-cfg]').forEach(el => { el.textContent = cfg[el.dataset.cfg] || ''; });
+    } catch { /* intestazione senza nome dell'ente */ }
   } catch { document.body.textContent = 'Impossibile caricare il modello delle pratiche dal server.'; return; }
   await avvio();
 })();

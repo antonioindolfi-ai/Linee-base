@@ -60,7 +60,7 @@ MIME = {".html": "text/html; charset=utf-8", ".css": "text/css; charset=utf-8",
         ".js": "text/javascript; charset=utf-8", ".json": "application/json; charset=utf-8",
         ".woff2": "font/woff2", ".txt": "text/plain; charset=utf-8", ".svg": "image/svg+xml"}
 
-CSP = ("default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; "
+CSP = ("default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self' data:; "
        "img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; "
        "base-uri 'none'; form-action 'self'; object-src 'none'")
 
@@ -367,6 +367,22 @@ class Archivio:
             if manc:
                 m += " con %d adempimenti obbligatori non spuntati" % len(manc)
             return m
+        if tipo == "salta_fase":
+            if fase >= CONCLUSA:
+                raise Errore(400, "La pratica è già conclusa.")
+            ts = time.time() * 1000
+            n = 0
+            for voce in TIPI[d["tipo"]]["check"][fase]:
+                if not d["check"].get(voce["id"]):
+                    d["check"][voce["id"]] = {"ok": True, "by": me["id"], "at": ts, "gia": True}
+                    n += 1
+                d.setdefault("dafare", {}).pop(voce["id"], None)
+            nome = FASI[fase]["n"]
+            d["fase"] = fase + 1
+            if d["fase"] >= CONCLUSA:
+                d["sospesa"] = False
+            dopo = "pratica conclusa" if d["fase"] >= CONCLUSA else "passata alla fase " + FASI[d["fase"]]["n"]
+            return "Fase %s registrata come già svolta (%d sottofasi segnate come già svolte); %s" % (nome, n, dopo)
         if tipo == "indietro":
             if fase <= 0 or fase >= CONCLUSA:
                 raise Errore(400, "Operazione non consentita in questa fase.")

@@ -9,6 +9,19 @@ Applicazione per seguire le pratiche di spesa dell'ufficio nelle fasi di **ordin
 - **Pagina:** script, stili e caratteri tipografici (Titillium Web, licenza SIL OFL, in `server/static/fonts/`) sono serviti dal server stesso.
 - **Blocco del browser:** il server invia una regola di sicurezza (`Content-Security-Policy`) che vieta al browser di collegarsi a qualsiasi indirizzo diverso dal server.
 
+## Aspetto grafico
+
+L'interfaccia usa **Bootstrap Italia 2.18.3**, il kit di Designers Italia per i siti e i servizi digitali della pubblica amministrazione. La copia del kit è in `server/static/vendor/bootstrap-italia/` (licenza BSD-3-Clause) e i caratteri Titillium Web e Roboto Mono sono in `server/static/fonts/`: tutto è servito dal vostro server.
+
+Il nome dell'amministrazione e della struttura che compaiono nell'intestazione e nel piè di pagina si impostano nel file `server/static/config.json`:
+
+```json
+{
+ "ente": "Nome dell'amministrazione",
+ "struttura": "Direzione generale · Ufficio"
+}
+```
+
 ## Requisiti
 
 - Python 3.8 o successivo, su Windows Server o Linux.
@@ -93,6 +106,10 @@ python ciclo_spesa.py backup D:\backup\ciclo_spesa-2026-11-20.sqlite3
 ```
 
 Conviene pianificarlo ogni giorno e conservare le copie secondo le regole dell'amministrazione. Per ripristinare un backup, si arresta il server e si sostituisce il file `dati/ciclo_spesa.sqlite3`.
+
+## Fasi già svolte
+
+Se una pratica viene registrata quando una o più fasi sono già state svolte, nella procedura guidata si usa il pulsante **Salta la fase: è già stata svolta**. Dopo la conferma, le sottofasi non ancora spuntate vengono registrate come «già svolte» a nome di chi conferma e la pratica passa alla fase successiva; l'operazione resta nella cronologia.
 
 ## Personalizzare le liste di controllo
 

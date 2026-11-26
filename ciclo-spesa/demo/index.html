@@ -1,79 +1,132 @@
+<meta name="referrer" content="no-referrer">
 <title>Ciclo della Spesa · prova</title>
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="vendor/bootstrap-italia/css/bootstrap-italia.min.css">
 <link rel="stylesheet" href="app.css">
-<style>
-/* Solo per l'interfaccia di prova: avviso fisso e tema scelto dal visualizzatore. */
-:root{--ribbon:#5b3fa0;--on-ribbon:#ffffff}
-:root[data-theme="dark"]{--bg:#0e141c; --surface:#16202b; --surface-2:#1b2632; --ink:#e5ebf2; --muted:#9aa8b8; --line:#2a3746;
-  --accent:#5aa2ec; --accent-strong:#86bcf3; --accent-soft:#1a2f47; --on-accent:#08121d;
-  --ok:#4cc08d; --ok-soft:#14302a; --warn:#e5a54a; --warn-soft:#352816; --bad:#f07a72; --bad-soft:#3a1d1c;
-  --scrim:rgba(0,0,0,.55); --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 20px rgba(0,0,0,.3); color-scheme:dark}
-:root[data-theme="light"]{--bg:#f1f4f8; --surface:#ffffff; --surface-2:#f6f8fb; --ink:#15202d; --muted:#586677; --line:#d6dde6;
-  --accent:#0066cc; --accent-strong:#004d99; --accent-soft:#e2edf9; --on-accent:#ffffff;
-  --ok:#0a7547; --ok-soft:#e0f2e9; --warn:#975700; --warn-soft:#fbeed9; --bad:#b3261e; --bad-soft:#f8e2e0;
-  --scrim:rgba(12,22,34,.42); --shadow:0 1px 2px rgba(15,35,60,.06),0 6px 20px rgba(15,35,60,.07); color-scheme:light}
-.demo-ribbon{position:fixed;left:0;right:0;bottom:0;z-index:35;background:var(--ribbon);color:var(--on-ribbon);font-size:.82rem;text-align:center;padding:6px 16px calc(6px + env(safe-area-inset-bottom,0px))}
-.demo-hint{background:var(--accent-soft);border-radius:6px;padding:8px 10px;color:var(--ink)!important}
-.demo-hint code{font-family:var(--f-num)}
-main{padding-bottom:90px}
-</style>
+<link rel="stylesheet" href="demo.css">
 <script src="demo-api.js"></script>
 <script src="app.js" defer></script>
 
+<a class="visually-hidden-focusable" href="#contenuto">Vai al contenuto</a>
 
 <div class="gate" id="scr-login" hidden>
-  <form id="f-login" autocomplete="on">
-    <h1>Ciclo della spesa</h1>
-    <p>Accedi con le credenziali assegnate dall'amministratore dell'applicazione.</p>
-    <p class="demo-hint"><b>Interfaccia di prova.</b> Credenziali già inserite: <code>demo</code> / <code>demo</code>.</p>
-    <div class="err" id="login-err" hidden></div>
-    <div class="fld"><label for="l-user">Nome utente</label><input id="l-user" name="username" autocomplete="username" required></div>
-    <div class="fld"><label for="l-pw">Password</label><input id="l-pw" name="password" type="password" autocomplete="current-password" required></div>
-    <button class="btn primary" type="submit">Accedi</button>
+  <form id="f-login" class="gate-card" autocomplete="on">
+    <div class="gate-brand"><svg class="icon icon-primary icon-lg" aria-hidden="true"><use href="vendor/bootstrap-italia/svg/sprites.svg#it-pa"></use></svg><div><span class="gate-ente" data-cfg="ente"></span><h1 class="h3 mb-0">Ciclo della spesa</h1></div></div>
+    <p class="text-secondary mb-0">Accedi con le credenziali assegnate dall'amministratore dell'applicazione.</p>
+    <div class="alert alert-info mb-0">Interfaccia di prova: le credenziali <code>demo</code> / <code>demo</code> sono già inserite.</div>
+    <div class="alert alert-danger mb-0" id="login-err" role="alert" hidden></div>
+    <div class="fld"><label for="l-user">Nome utente</label><input class="form-control" id="l-user" name="username" autocomplete="username" required></div>
+    <div class="fld"><label for="l-pw">Password</label><input class="form-control" id="l-pw" name="password" type="password" autocomplete="current-password" required></div>
+    <button class="btn btn-primary" type="submit">Accedi</button>
   </form>
 </div>
 
 <div class="gate" id="scr-pwd" hidden>
-  <form id="f-pwd">
-    <h1>Imposta la tua password</h1>
-    <p id="pwd-intro">Al primo accesso, o dopo una reimpostazione, scegli una password personale di almeno 10 caratteri.</p>
-    <div class="err" id="pwd-err" hidden></div>
-    <div class="fld"><label for="p-old">Password attuale o provvisoria</label><input id="p-old" type="password" autocomplete="current-password" required></div>
-    <div class="fld"><label for="p-new">Nuova password</label><input id="p-new" type="password" autocomplete="new-password" minlength="10" required></div>
-    <div class="fld"><label for="p-new2">Ripeti la nuova password</label><input id="p-new2" type="password" autocomplete="new-password" minlength="10" required></div>
-    <div class="actions tight"><button class="btn primary" type="submit">Salva la password</button><button class="btn" type="button" id="pwd-cancel" hidden>Annulla</button></div>
+  <form id="f-pwd" class="gate-card">
+    <h1 class="h3 mb-0">Imposta la tua password</h1>
+    <p class="text-secondary mb-0" id="pwd-intro">Al primo accesso, o dopo una reimpostazione, scegli una password personale di almeno 10 caratteri.</p>
+    <div class="alert alert-danger mb-0" id="pwd-err" role="alert" hidden></div>
+    <div class="fld"><label for="p-old">Password attuale o provvisoria</label><input class="form-control" id="p-old" type="password" autocomplete="current-password" required></div>
+    <div class="fld"><label for="p-new">Nuova password</label><input class="form-control" id="p-new" type="password" autocomplete="new-password" minlength="10" required></div>
+    <div class="fld"><label for="p-new2">Ripeti la nuova password</label><input class="form-control" id="p-new2" type="password" autocomplete="new-password" minlength="10" required></div>
+    <div class="actions tight"><button class="btn btn-primary" type="submit">Salva la password</button><button class="btn btn-outline-primary" type="button" id="pwd-cancel" hidden>Annulla</button></div>
   </form>
 </div>
 
 <div id="scr-app" hidden>
-  <header class="top">
-    <div class="wrap top-row">
-      <div class="brand">
-        <h1>Ciclo della spesa</h1>
-        <small>Ordinazione · Liquidazione · Contabilizzazione · Pagamento</small>
-      </div>
-      <nav class="tabs" aria-label="Sezioni">
-        <a href="#cruscotto" data-view="cruscotto">Cruscotto</a>
-        <a href="#pratiche" data-view="pratiche">Pratiche</a>
-        <a href="#guida" data-view="guida">Guida</a>
-        <a href="#utenti" data-view="utenti" class="adm">Utenti e registro</a>
-      </nav>
-      <button class="btn primary w" id="btn-new" type="button">+ Nuova pratica</button>
-      <div class="account"><b id="acc-name"></b><span id="acc-role"></span>
-        <button class="btn sm ghost" id="btn-pwd" type="button">Cambia password</button>
-        <button class="btn sm" id="btn-logout" type="button">Esci</button></div>
+  <header class="it-header-wrapper" id="testata">
+    <div class="it-header-slim-wrapper">
+      <div class="container"><div class="row"><div class="col-12">
+        <div class="it-header-slim-wrapper-content">
+          <span class="navbar-brand" data-cfg="ente"></span>
+          <div class="it-header-slim-right-zone account">
+            <svg class="icon icon-white icon-sm" aria-hidden="true"><use href="vendor/bootstrap-italia/svg/sprites.svg#it-user"></use></svg>
+            <span class="acc-testo"><b id="acc-name"></b> <span id="acc-role"></span></span>
+            <button class="btn-slim acc-testo" id="btn-pwd" type="button">Cambia password</button>
+            <button class="btn btn-outline-light btn-sm btn-esci" id="btn-logout" type="button"><svg class="icon icon-white icon-xs" aria-hidden="true"><use href="vendor/bootstrap-italia/svg/sprites.svg#it-logout"></use></svg> Esci</button>
+          </div>
+        </div>
+      </div></div></div>
     </div>
-    <div id="banner" hidden></div>
+    <div class="it-nav-wrapper">
+      <div class="it-header-center-wrapper">
+        <div class="container"><div class="row"><div class="col-12">
+          <div class="it-header-center-content-wrapper">
+            <div class="it-brand-wrapper">
+              <a href="#cruscotto">
+                <svg class="icon" aria-hidden="true"><use href="vendor/bootstrap-italia/svg/sprites.svg#it-pa"></use></svg>
+                <div class="it-brand-text">
+                  <div class="it-brand-title">Ciclo della spesa</div>
+                  <div class="it-brand-tagline d-none d-md-block" data-cfg="struttura"></div>
+                </div>
+              </a>
+            </div>
+            <div class="it-right-zone">
+              <button class="btn btn-nuova w" id="btn-new" type="button"><svg class="icon icon-primary icon-sm" aria-hidden="true"><use href="vendor/bootstrap-italia/svg/sprites.svg#it-plus-circle"></use></svg> <span>Nuova</span><span class="d-none d-md-inline">pratica</span></button>
+            </div>
+          </div>
+        </div></div></div>
+      </div>
+      <div class="it-header-navbar-wrapper">
+        <div class="container"><div class="row"><div class="col-12">
+          <nav class="navbar navbar-expand-lg" aria-label="Navigazione principale">
+            <button class="custom-navbar-toggler" type="button" aria-controls="menu-principale" aria-expanded="false" aria-label="Mostra o nascondi il menu" id="menu-apri">
+              <svg class="icon" aria-hidden="true"><use href="vendor/bootstrap-italia/svg/sprites.svg#it-burger"></use></svg>
+            </button>
+            <div class="navbar-collapsable" id="menu-principale">
+              <div class="overlay" id="menu-overlay"></div>
+              <div class="close-div"><button class="btn close-menu" type="button" id="menu-chiudi"><span class="visually-hidden">Chiudi il menu</span><svg class="icon" aria-hidden="true"><use href="vendor/bootstrap-italia/svg/sprites.svg#it-close-big"></use></svg></button></div>
+              <div class="menu-wrapper">
+                <ul class="navbar-nav tabs">
+                  <li class="nav-item"><a class="nav-link" href="#cruscotto" data-view="cruscotto"><span>Cruscotto</span></a></li>
+                  <li class="nav-item"><a class="nav-link" href="#pratiche" data-view="pratiche"><span>Pratiche</span></a></li>
+                  <li class="nav-item"><a class="nav-link" href="#guida" data-view="guida"><span>Guida</span></a></li>
+                  <li class="nav-item adm"><a class="nav-link" href="#utenti" data-view="utenti"><span>Utenti e registro</span></a></li>
+                  <li class="nav-item d-lg-none"><button class="nav-link btn-nav" type="button" id="menu-pwd"><span>Cambia password</span></button></li>
+                </ul>
+              </div>
+            </div>
+          </nav>
+        </div></div></div>
+      </div>
+    </div>
   </header>
-  <main class="wrap">
+  <div id="banner" hidden></div>
+  <main class="container" id="contenuto">
     <section id="v-cruscotto"></section>
     <section id="v-pratiche" hidden></section>
     <section id="v-guida" hidden></section>
     <section id="v-utenti" hidden></section>
   </main>
+  <footer class="it-footer">
+    <div class="it-footer-main">
+      <div class="container"><div class="row"><div class="col-12">
+        <div class="it-brand-wrapper">
+          <a href="#cruscotto">
+            <svg class="icon" aria-hidden="true"><use href="vendor/bootstrap-italia/svg/sprites.svg#it-pa"></use></svg>
+            <div class="it-brand-text">
+              <div class="it-brand-title" data-cfg="ente"></div>
+              <div class="it-brand-tagline" data-cfg="struttura"></div>
+            </div>
+          </a>
+        </div>
+        <p class="footer-nota">Applicazione interna per seguire le pratiche di spesa nelle fasi di ordinazione, liquidazione, contabilizzazione e pagamento. I dati restano sul server dell'amministrazione.</p>
+      </div></div></div>
+    </div>
+    <div class="it-footer-small-prints clearfix">
+      <div class="container">
+        <h2 class="visually-hidden">Collegamenti utili</h2>
+        <ul class="it-footer-small-prints-list list-inline mb-0 d-flex flex-column flex-md-row">
+          <li class="list-inline-item"><a href="#guida">Guida operativa</a></li>
+          <li class="list-inline-item"><a href="#pratiche">Elenco delle pratiche</a></li>
+          <li class="list-inline-item"><span>Realizzato con Bootstrap Italia, il kit di Designers Italia per i servizi digitali della PA</span></li>
+        </ul>
+      </div>
+    </div>
+  </footer>
 </div>
 
 <div class="scrim" id="scrim" hidden></div>
 <aside class="drawer" id="drawer" hidden aria-modal="true" role="dialog" aria-labelledby="dr-title"></aside>
-<div class="toast" id="toast" hidden role="status"></div>
-
+<div class="toast-msg" id="toast" hidden role="status"></div>
 <div class="demo-ribbon">Interfaccia di prova con dati fittizi · le modifiche restano in memoria e si azzerano ricaricando la pagina</div>

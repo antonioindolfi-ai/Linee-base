@@ -81,6 +81,13 @@
         d.fase = fase + 1; if (d.fase >= CONCL) d.sospesa = false;
         return (d.fase >= CONCL ? 'Pratica conclusa' : 'Passata alla fase ' + F[d.fase].n) + (manc.length ? ' con ' + manc.length + ' adempimenti obbligatori non spuntati' : '');
       }
+      case 'salta_fase': {
+        if (fase >= CONCL) throw new E(400, 'La pratica è già conclusa.');
+        let n = 0; d.dafare = d.dafare || {};
+        M.TIPI[d.tipo].check[fase].forEach(i => { if (!d.check[i.id]) { d.check[i.id] = {ok: true, by: me.id, at: now(), gia: true}; n++; } delete d.dafare[i.id]; });
+        d.fase = fase + 1; if (d.fase >= CONCL) d.sospesa = false;
+        return 'Fase ' + F[fase].n + ' registrata come già svolta (' + n + ' sottofasi segnate come già svolte); ' + (d.fase >= CONCL ? 'pratica conclusa' : 'passata alla fase ' + F[d.fase].n);
+      }
       case 'indietro': d.fase = fase - 1; return 'Riportata alla fase ' + F[d.fase].n;
       case 'riapri': d.fase = CONCL - 1; return 'Pratica riaperta in fase ' + F[CONCL - 1].n;
       case 'sospendi': d.sospesa = true; d.motivoSospensione = String(az.motivo || '').slice(0, 300); return 'Pratica sospesa' + (d.motivoSospensione ? ': ' + d.motivoSospensione : '');

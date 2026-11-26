@@ -1,0 +1,3 @@
+/* Solo per l'interfaccia di prova */
+.demo-ribbon{position:fixed;left:0;right:0;bottom:0;z-index:35;background:#5b3fa0;color:#fff;font-size:.82rem;text-align:center;padding:6px 16px calc(6px + env(safe-area-inset-bottom,0px))}
+.it-footer{padding-bottom:36px}
