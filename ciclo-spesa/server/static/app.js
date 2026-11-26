@@ -79,7 +79,7 @@ async function caricaTutto() {
 async function caricaDettaglio(id) {
   try { S.det = await api('GET', '/api/pratiche/' + id); }
   catch (e) { if (e.code === 404) { S.det = null; S.pratiche.delete(id); } else if (e.code) toast(e.message); }
-  if (S.open === id) renderDrawer(false);
+  if (S.open === id) { renderDrawer(false); renderAppr(); }
 }
 async function controllaNovita() {
   if (document.hidden || !S.me) return;
@@ -283,7 +283,7 @@ async function renderUtenti() {
 function openDrawer(id) { S.modo = 'guida'; S.wizIdx = null; S.wizSpiega = false; S.wizRiep = false; S.wizIntro = null; S.open = id; S.newMode = false; S.formDirty = false; S.advWarn = false; S.delAsk = false; S.sospAsk = false; S.det = null; const p = S.pratiche.get(id); S.viewFase = Math.min(p?.fase ?? 0, 3); showDrawer(); renderDrawer(true); caricaDettaglio(id); }
 function openNew() { S.open = null; S.newMode = true; showDrawer(); renderNew(); }
 function showDrawer() { $('#drawer').hidden = false; $('#scrim').hidden = false; document.body.style.overflow = 'hidden'; }
-function closeDrawer() { S.open = null; S.newMode = false; S.det = null; $('#drawer').hidden = true; $('#scrim').hidden = true; document.body.style.overflow = ''; }
+function closeDrawer() { chiudiAppr(); S.open = null; S.newMode = false; S.det = null; $('#drawer').hidden = true; $('#scrim').hidden = true; document.body.style.overflow = ''; }
 
 function renderNew() {
   const anno = new Date().getFullYear();
@@ -324,6 +324,7 @@ function renderDrawer(full) {
 
   const dis = canWrite() && S.det ? '' : 'disabled';
   const guidata = S.modo === 'guida' && vf === Math.min(fase, 3) && fase < CONCLUSA;
+  if (!guidata) S.introAperta = false;
   $('#dr-phase').classList.toggle('guida', guidata);
   $('#dr-phase').innerHTML = guidata ? renderGuidata(p) : renderElenco(p, vf);
 
@@ -372,7 +373,8 @@ function renderGuidata(p) {
   const ro = canWrite() && S.det ? '' : 'disabled';
   let idx = S.wizIdx ?? lst.findIndex(it => statoVoce(p, it) === 'aperto');
   const iniziata = n.fatto + n.dafare > 0;
-  if (S.wizIntro === true || (S.wizIntro == null && !iniziata && !S.wizRiep && S.wizIdx == null)) return renderIntro(p, lst, iniziata);
+  S.introAperta = S.wizIntro === true || (S.wizIntro == null && !iniziata && !S.wizRiep && S.wizIdx == null);
+  if (S.introAperta) return renderIntro(p, lst, iniziata);
   let h = `<div class="g-head"><span class="tag">Procedura guidata · fase ${fase + 1} di ${FASI.length}</span><h3 class="g-title">${esc(FASI[fase].n)}</h3>
     <p class="ph-desc">${esc(FASI[fase].d)}</p>
     <div class="g-prog"><progress class="prog wide" max="${lst.length}" value="${n.fatto}"></progress><span class="sm"><b class="num">${n.fatto}</b> fatti · <b class="num">${n.dafare}</b> da fare · <b class="num">${n.aperto}</b> senza risposta</span></div></div>`;
@@ -382,7 +384,7 @@ function renderGuidata(p) {
     h += `<div class="riep"><h4>Riepilogo della fase</h4><ul>${lst.map((it, i) => { const st = statoVoce(p, it), c = p.check?.[it.id];
       return `<li class="r-${st}"><span class="chip ${st === 'fatto' ? 'ok' : st === 'dafare' ? 'warn' : ''}">${st === 'fatto' ? 'Fatto' : st === 'dafare' ? 'Da fare' : 'Senza risposta'}</span>
         <div><span>${esc(it.t)}</span>${it.r ? '<span class="req">obbligatorio</span>' : ''}${c ? `<span class="by">il ${fmtTs(c.at)} da ${who(c.by)}</span>` : ''}
-        ${st !== 'fatto' ? `<div class="actions tight r-act"><button class="btn sm" data-wiz="si" data-i="${i}" type="button" ${ro}>L'ho fatto</button><button class="btn sm ghost" data-wiz="vai" data-i="${i}" type="button">Spiegami</button></div>` : ''}</div></li>`; }).join('')}</ul>
+        <div class="actions tight r-act">${st !== 'fatto' ? `<button class="btn sm" data-wiz="si" data-i="${i}" type="button" ${ro}>L'ho fatto</button>` : ''}<button class="btn sm ghost" data-appr="${fase}:${i}" type="button">Approfondisci</button></div></div></li>`; }).join('')}</ul>
       ${miss.length ? `<p class="warnbox">Per passare alla fase successiva mancano <b>${miss.length}</b> adempimenti obbligatori. Puoi completarli ora oppure avanzare comunque: resterà annotato nella cronologia.</p>` : '<p class="okbox">Tutti gli adempimenti obbligatori di questa fase sono fatti.</p>'}
       ${avanzaHtml(p)}
       ${n.aperto ? '<div class="actions"><button class="btn ghost" data-wiz="domande" type="button">Riprendi le domande</button></div>' : ''}</div>`;
@@ -395,6 +397,7 @@ function renderGuidata(p) {
     <p class="q-ask">Hai fatto questo?</p>
     <p class="q-item" id="q-item">${esc(it.t)}</p>
     ${it.ref ? `<p class="q-ref">${esc(it.ref)}</p>` : ''}
+    <p class="q-deep"><button class="lnk" data-appr="${fase}:${idx}" type="button">Approfondisci questa sottofase ›</button></p>
     ${st === 'fatto' ? `<p class="q-now">Già segnato come fatto il ${fmtTs(c.at)} da ${who(c.by)}.</p>` : st === 'dafare' ? '<p class="q-now">Segnato come da fare.</p>' : ''}
     ${S.wizSpiega ? `<div class="spiega">${aiutoHtml(it)}
         <div class="actions"><button class="btn primary" data-wiz="si" type="button" ${ro}>Fatto, andiamo avanti</button><button class="btn" data-wiz="so" type="button" ${ro}>Lo farò dopo</button></div></div>`
@@ -415,8 +418,8 @@ function renderIntro(p, lst, iniziata) {
   return `<div class="g-head"><span class="tag">Procedura guidata · fase ${fase + 1} di ${FASI.length}</span><h3 class="g-title">Come si svolge: ${esc(FASI[fase].n.toLowerCase())}</h3>
       <p class="intro-come">${esc(it?.come || FASI[fase].d)}</p></div>
     <div class="intro">
-      <section class="i-seq"><h4>Le sottofasi, in ordine</h4><ol class="flow">${lst.map(v => { const st = statoVoce(p, v);
-        return `<li class="f-${st}"><span class="f-t">${esc(v.t)}</span><span class="f-m">${v.r ? 'obbligatoria' : 'se pertinente'}${st === 'fatto' ? ' · <span class="txt-ok">fatta</span>' : st === 'dafare' ? ' · da fare' : ''}</span></li>`; }).join('')}</ol></section>
+      <section class="i-seq"><h4>Le sottofasi, in ordine</h4><ol class="flow">${lst.map((v, i) => { const st = statoVoce(p, v);
+        return `<li class="f-${st}"><button class="f-t" data-appr="${fase}:${i}" type="button">${esc(v.t)}</button><span class="f-m">${v.r ? 'obbligatoria' : 'se pertinente'}${st === 'fatto' ? ' · <span class="txt-ok">fatta</span>' : st === 'dafare' ? ' · da fare' : ''} · <button class="lnk sm" data-appr="${fase}:${i}" type="button">approfondisci ›</button></span></li>`; }).join('')}</ol><p class="mut sm">Tocca una sottofase per aprire la sua scheda di approfondimento.</p></section>
       ${it ? `<div class="i-grid">
         <section class="i-box"><h4>Chi interviene</h4>${lista(it.chi, true)}</section>
         <section class="i-box"><h4>Documenti</h4><p class="i-sub">Servono</p>${lista(it.entrata)}<p class="i-sub">Si producono</p>${lista(it.uscita)}</section>
@@ -426,13 +429,56 @@ function renderIntro(p, lst, iniziata) {
       <div class="actions"><button class="btn primary" data-wiz="inizia" type="button">${iniziata ? 'Riprendi le domande' : 'Inizia le domande'}</button><button class="btn ghost" data-wiz="elenco" type="button">Vedi l'elenco completo</button></div>
     </div>`;
 }
+/* ---------------- scheda di approfondimento della sottofase ---------------- */
+function apriAppr(fase, idx) {
+  let sc = $('#appr-scrim'), el = $('#appr');
+  if (!el) {
+    sc = document.createElement('div'); sc.id = 'appr-scrim'; sc.className = 'scrim appr-scrim'; sc.hidden = true;
+    sc.addEventListener('click', chiudiAppr);
+    el = document.createElement('section'); el.id = 'appr'; el.className = 'appr'; el.hidden = true;
+    el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-labelledby', 'appr-title');
+    document.body.append(sc, el);
+  }
+  if (S.introAperta && S.modo === 'guida') S.wizIntro = true;
+  S.appr = {fase, idx}; renderAppr(); sc.hidden = false; el.hidden = false; $('#appr .appr-x')?.focus();
+}
+function chiudiAppr() { if (!S.appr) return; S.appr = null; $('#appr').hidden = true; $('#appr-scrim').hidden = true; }
+function renderAppr() {
+  const el = $('#appr'); if (!el || !S.appr) return;
+  const p = S.det || S.pratiche.get(S.open); if (!p) { chiudiAppr(); return; }
+  const {fase, idx} = S.appr, lst = TIPI[p.tipo].check[fase], it = lst[idx], st = statoVoce(p, it), c = p.check?.[it.id];
+  const ro = canWrite() && S.det ? '' : 'disabled';
+  const corrente = fase === (p.fase ?? 0) && fase < CONCLUSA;
+  el.innerHTML = `<header class="appr-h"><div><span class="tag">Approfondimento · ${esc(FASI[fase].n)} · sottofase ${idx + 1} di ${lst.length}</span>
+      <h2 id="appr-title">${esc(it.t)}</h2>
+      <div class="chips"><span class="chip">${it.r ? 'Obbligatoria' : 'Se pertinente'}</span><span class="chip ${st === 'fatto' ? 'ok' : st === 'dafare' ? 'warn' : ''}">${st === 'fatto' ? 'Fatta' : st === 'dafare' ? 'Da fare' : 'Senza risposta'}</span>${c ? `<span class="mut sm">il ${fmtTs(c.at)} da ${who(c.by)}</span>` : ''}</div></div>
+      <button class="btn ghost appr-x" data-ap="chiudi" type="button" aria-label="Chiudi l'approfondimento">✕</button></header>
+    <div class="appr-b">
+      <h4>A cosa serve</h4>${aiutoHtml(it)}
+    </div>
+    <footer class="appr-f">
+      <div class="actions tight">${st !== 'fatto' ? `<button class="btn primary w" data-ap="si" type="button" ${ro}>L'ho fatto</button>` : ''}${st === 'aperto' ? `<button class="btn w" data-ap="so" type="button" ${ro}>Lo farò dopo</button>` : ''}${corrente && S.modo === 'guida' ? '<button class="btn ghost" data-ap="vai" type="button">Vai a questa domanda</button>' : ''}</div>
+      <div class="actions tight appr-nav"><button class="btn sm ghost" data-ap="prev" type="button" ${idx === 0 ? 'disabled' : ''}>← Precedente</button><button class="btn sm ghost" data-ap="next" type="button" ${idx === lst.length - 1 ? 'disabled' : ''}>Successiva →</button><button class="btn sm" data-ap="chiudi" type="button">Chiudi</button></div>
+    </footer>`;
+}
+async function azioneAppr(a) {
+  if (!S.appr) return;
+  const p = S.det; const {fase, idx} = S.appr;
+  if (a === 'chiudi') { chiudiAppr(); return; }
+  if (a === 'prev' || a === 'next') { S.appr.idx = Math.max(0, Math.min(TIPI[(p || S.pratiche.get(S.open)).tipo].check[fase].length - 1, idx + (a === 'next' ? 1 : -1))); renderAppr(); return; }
+  if (a === 'vai') { chiudiAppr(); S.wizIntro = false; S.wizRiep = false; S.wizIdx = idx; S.wizSpiega = false; renderDrawer(false); vediFase(); return; }
+  if (!p) return;
+  const it = TIPI[p.tipo].check[fase][idx];
+  const body = a === 'si' ? {check: {[it.id]: true}} : {dafare: {[it.id]: true}};
+  if (await modifica(S.open, body)) { renderAppr(); toast(a === 'si' ? 'Sottofase segnata come fatta.' : 'Sottofase aggiunta alle cose da fare.'); }
+}
 function renderElenco(p, vf) {
   const fase = p.fase ?? 0, lst = TIPI[p.tipo]?.check[vf] || [], dis = canWrite() && S.det ? '' : 'disabled';
   const corrente = vf === Math.min(fase, 3) && fase < CONCLUSA;
   let ph = `<h3>Fase ${vf + 1} · ${esc(FASI[vf].n)}${corrente ? '' : ' <span class="chip">consultazione</span>'}</h3><p class="ph-desc">${esc(FASI[vf].d)}</p>`;
   if (corrente) ph += '<div class="actions tight"><button class="btn sm primary" data-wiz="guida" type="button">Torna alla procedura guidata</button></div>';
-  ph += lst.map(it => { const c = p.check?.[it.id], df = p.dafare?.[it.id];
-    return `<label class="chk ${c ? 'on' : ''}"><input type="checkbox" data-chk="${it.id}" ${c ? 'checked' : ''} ${dis}><span class="tx">${esc(it.t)}${it.r ? '<span class="req">obbligatorio</span>' : ''}${df && !c ? ' <span class="chip warn">Da fare</span>' : ''}</span>${it.ref ? `<span class="ref">${esc(it.ref)}</span>` : ''}${c ? `<span class="by">Fatto il ${fmtTs(c.at)} da ${who(c.by)}</span>` : ''}</label>`; }).join('');
+  ph += lst.map((it, i) => { const c = p.check?.[it.id], df = p.dafare?.[it.id];
+    return `<label class="chk ${c ? 'on' : ''}"><input type="checkbox" data-chk="${it.id}" ${c ? 'checked' : ''} ${dis}><span class="tx">${esc(it.t)}${it.r ? '<span class="req">obbligatorio</span>' : ''}${df && !c ? ' <span class="chip warn">Da fare</span>' : ''}</span>${it.ref ? `<span class="ref">${esc(it.ref)}</span>` : ''}${c ? `<span class="by">Fatto il ${fmtTs(c.at)} da ${who(c.by)}</span>` : ''}<span class="ref"><button class="lnk sm" data-appr="${vf}:${i}" type="button">Approfondisci ›</button></span></label>`; }).join('');
   if (corrente) ph += avanzaHtml(p);
   else if (fase >= CONCLUSA && vf === 3) ph += `<div class="actions w"><button class="btn" data-act="reopen" type="button" ${dis}>Riapri in fase Pagamento</button></div>`;
   return ph;
@@ -504,8 +550,10 @@ function csv() {
 }
 
 document.addEventListener('click', async e => {
-  const t = e.target.closest('[data-open],[data-act],[data-vf],[data-goto],[data-attiva],[data-reset],[data-wiz]'); if (!t) return;
+  const t = e.target.closest('[data-open],[data-act],[data-vf],[data-goto],[data-attiva],[data-reset],[data-wiz],[data-appr],[data-ap]'); if (!t) return;
   if (t.dataset.wiz) { wiz(t.dataset.wiz, t.dataset.i != null ? +t.dataset.i : null); return; }
+  if (t.dataset.appr) { e.preventDefault(); const [f, i] = t.dataset.appr.split(':').map(Number); apriAppr(f, i); return; }
+  if (t.dataset.ap) { e.preventDefault(); azioneAppr(t.dataset.ap); return; }
   if (t.dataset.open) { openDrawer(t.dataset.open); return; }
   if (t.dataset.vf != null) { S.viewFase = +t.dataset.vf; S.advWarn = false; const f = S.det?.fase ?? 0; S.modo = (S.viewFase === Math.min(f, 3) && f < CONCLUSA) ? 'guida' : 'elenco'; S.wizSpiega = false; renderDrawer(false); return; }
   if (t.dataset.goto) { const g = t.dataset.goto; S.f = {...S.f, fase: g === 'concluse' ? String(CONCLUSA) : 'aperte', stato: ['scadute', 'inscadenza', 'sospese'].includes(g) ? g : '', eserc: g === 'concluse' ? String(new Date().getFullYear()) : ''}; location.hash = 'pratiche'; return; }
@@ -555,6 +603,7 @@ async function utente(id, body, titolo) {
 }
 
 document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && S.appr) { chiudiAppr(); return; }
   if (e.key === 'Escape' && !$('#drawer').hidden) closeDrawer();
   if (e.key === 'Enter' && e.target.matches('tr[data-open]')) openDrawer(e.target.dataset.open);
 });
@@ -630,7 +679,7 @@ function renderAll(cambioVista) {
   if (S.view === 'pratiche') renderPratiche();
   if (S.view === 'guida') renderGuida();
   if (S.view === 'utenti' && cambioVista) renderUtenti();
-  if (S.open && !S.newMode && !$('#drawer').hidden) renderDrawer(false);
+  if (S.open && !S.newMode && !$('#drawer').hidden) { renderDrawer(false); renderAppr(); }
 }
 function schermata(id) { ['scr-login', 'scr-pwd', 'scr-app'].forEach(k => $('#' + k).hidden = k !== id); }
 function showLogin(msg) {
