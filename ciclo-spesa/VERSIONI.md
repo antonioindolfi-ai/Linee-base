@@ -1,11 +1,13 @@
 # Ciclo della spesa — versioni conservate
 
-Tutto il lavoro è conservato nel repository `antonioindolfi-ai/Linee-base`, branch `ccr-48b60d09-ap4nzm`. Ogni passaggio è un commit. I punti principali hanno un segnalibro permanente (tag), da cui GitHub permette di scaricare lo ZIP completo:
+Tutto il lavoro è conservato nel repository `antonioindolfi-ai/Linee-base`, branch `ccr-48b60d09-ap4nzm`: ogni passaggio è un commit e resta recuperabile. Da ogni commit GitHub permette di scaricare lo ZIP completo dei file in quello stato:
 
-| Segnalibro (tag) | Contenuto | Scarica |
+| Versione | Contenuto | Scarica lo ZIP |
 |---|---|---|
-| `ciclo-spesa-v1-claude` | Prima versione: pagina unica con archivio condiviso su claude.ai | https://github.com/antonioindolfi-ai/Linee-base/archive/refs/tags/ciclo-spesa-v1-claude.zip |
-| `ciclo-spesa-v2-2026-11-27` | Versione attuale completa: server per più utenti **e** postazioni inserimento/consultazione, procedura guidata, Bootstrap Italia, rimborsi di missione | https://github.com/antonioindolfi-ai/Linee-base/archive/refs/tags/ciclo-spesa-v2-2026-11-27.zip |
+| Prima versione (commit `a886e57`) | Pagina unica con archivio condiviso su claude.ai | https://github.com/antonioindolfi-ai/Linee-base/archive/a886e576fe2a7da07ad76b52fe6cdf6215234ef4.zip |
+| Versione completa al 27/11/2026 (commit `af8f24e`) | Server per più utenti **e** postazioni inserimento/consultazione, procedura guidata, Bootstrap Italia, rimborsi di missione | https://github.com/antonioindolfi-ai/Linee-base/archive/af8f24ee215ee77b8a8c2d931bcc22ccc68fcd7c.zip |
+
+Per fissare questi punti anche come segnalibri permanenti (tag), dalla pagina del repository su GitHub: «Releases» → «Draft a new release» → in «Choose a tag» scrivere un nome (ad esempio `ciclo-spesa-v2`) e come destinazione il branch `ccr-48b60d09-ap4nzm`.
 
 ## Le modalità d'uso tra cui scegliere
 
