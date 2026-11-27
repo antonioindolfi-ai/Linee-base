@@ -75,6 +75,20 @@ class Errore(Exception):
 # --------------------------------------------------------------------------
 # Archivio
 # --------------------------------------------------------------------------
+def percorso_di_rete(path):
+    """Vero se il file sta su una cartella di rete (percorso UNC o unità di rete di Windows)."""
+    p = os.path.abspath(path)
+    if any(x.startswith("\\\\") or x.startswith("//") for x in (path, p)):
+        return True
+    if os.name == "nt":
+        try:
+            import ctypes
+            return ctypes.windll.kernel32.GetDriveTypeW(os.path.splitdrive(p)[0] + "\\") == 4  # DRIVE_REMOTE
+        except Exception:
+            return False
+    return False
+
+
 def hash_password(pw, salt=None):
     salt = salt or secrets.token_bytes(16)
     return salt, hashlib.pbkdf2_hmac("sha256", pw.encode("utf-8"), salt, PBKDF2_ITER)
@@ -86,12 +100,21 @@ def password_valida(pw):
 
 class Archivio:
     def __init__(self, path):
-        os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
+        cartella = os.path.dirname(os.path.abspath(path))
+        os.makedirs(cartella, exist_ok=True)
+        if os.name == "posix":
+            os.chmod(cartella, 0o700)  # solo l'utenza che esegue il server
         self.path = path
         self.lock = threading.RLock()
+        nuovo = not os.path.exists(path)
         self.c = sqlite3.connect(path, check_same_thread=False, isolation_level=None)
+        if nuovo and os.name == "posix":
+            os.chmod(path, 0o600)
         self.c.row_factory = sqlite3.Row
-        self.c.execute("PRAGMA journal_mode=WAL")
+        # Su una cartella di rete SQLite non può usare la modalità WAL (servirebbe memoria
+        # condivisa locale): in quel caso si usa la modalità tradizionale e si avvisa.
+        self.in_rete = percorso_di_rete(path)
+        self.c.execute("PRAGMA journal_mode=%s" % ("DELETE" if self.in_rete else "WAL"))
         self.c.execute("PRAGMA foreign_keys=ON")
         self.c.executescript("""
         CREATE TABLE IF NOT EXISTS utenti(
@@ -727,6 +750,10 @@ def main():
         srv.socket = ctx.wrap_socket(srv.socket, server_side=True)
         schema = "https"
     print("Ciclo della spesa in ascolto su %s://%s:%d  (database: %s)" % (schema, args.host, args.porta, os.path.abspath(args.db)))
+    if A.in_rete:
+        print("ATTENZIONE: il database si trova su una cartella di rete. Chiunque abbia accesso a quella cartella\n"
+              "puo' leggere il file direttamente, senza passare dalle utenze dell'applicazione, e SQLite su rete\n"
+              "e' meno affidabile. Conviene indicare con --db una cartella sul disco locale del server.")
     if args.host == "127.0.0.1":
         print("Raggiungibile solo da questo computer. Per la rete interna avvia con --host 0.0.0.0")
     try:

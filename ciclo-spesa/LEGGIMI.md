@@ -22,6 +22,41 @@ Il nome dell'amministrazione e della struttura che compaiono nell'intestazione e
 }
 ```
 
+## Riservatezza: perché i dati non escono
+
+Cosa garantisce l'applicazione:
+
+- **Il server non si collega a nulla.** Usa solo la libreria standard di Python e non contiene alcuna istruzione di connessione verso l'esterno: riceve richieste, non ne fa.
+- **Il browser non può contattare altri indirizzi.** Il server invia una regola di sicurezza (Content-Security-Policy) che consente script, stili, caratteri, immagini e connessioni solo verso il server stesso. Un tentativo di inviare dati altrove viene bloccato dal browser.
+- **Nessuna risorsa esterna.** Kit grafico, caratteri e icone sono copiati nella cartella `server/static` e serviti in locale.
+- **Nessun dato nel browser.** La pagina non usa memoria locale del browser: i dati stanno solo nel database sul server.
+- **Log senza dati.** Il registro del server annota indirizzo del computer, data e percorso della richiesta, non il contenuto delle pratiche né le password.
+- **Password protette.** Sono conservate solo come impronta (PBKDF2), le sessioni come impronta del codice di accesso.
+
+Cosa resta in mano all'amministrazione:
+
+- **L'esportazione CSV** scarica le pratiche sul computer di chi la usa: da lì in poi valgono le regole interne sulla gestione dei documenti.
+- **La rete interna:** senza HTTPS, password e dati viaggiano in chiaro sulla rete dell'ufficio (vedi la sezione HTTPS).
+- **L'accesso al file del database:** vedi sotto.
+
+## Cartella condivisa: come usarla correttamente
+
+L'applicazione **non si usa aprendo i file dalla cartella condivisa**: la pagina funziona solo se il programma `ciclo_spesa.py` è in esecuzione su un computer (un server o un PC sempre acceso), e i colleghi vi accedono dal browser all'indirizzo `http://NOME-DEL-COMPUTER:8080`.
+
+La cartella condivisa può contenere la copia del programma, ma **il database non deve stare in una cartella leggibile da tutti**:
+
+- chi ha accesso alla cartella potrebbe copiare o leggere il file del database senza passare dalle utenze dell'applicazione;
+- SQLite su cartelle di rete è meno affidabile (con più accessi contemporanei il file può danneggiarsi).
+
+Per questo:
+
+1. collocate il database su un disco locale del computer che esegue il server, in una cartella accessibile solo all'utenza che lo esegue, con l'opzione `--db`, ad esempio `python ciclo_spesa.py --db D:\\ciclo-spesa-dati\\ciclo_spesa.sqlite3 avvia --host 0.0.0.0`;
+2. se il database viene comunque indicato su una cartella di rete, il server lo segnala all'avvio;
+3. conservate i backup in una posizione con accesso altrettanto ristretto;
+4. concordate con i sistemi informativi computer, porta, accesso dalla rete interna e certificato HTTPS.
+
+Su Linux il server crea già la cartella dei dati e il database con permessi riservati all'utenza che lo esegue; su Windows i permessi si impostano sulla cartella.
+
 ## Requisiti
 
 - Python 3.8 o successivo, su Windows Server o Linux.
