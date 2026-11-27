@@ -284,3 +284,7 @@ details.voce summary em{font-style:normal;color:var(--muted);font-size:.85em}
 /* filtro per tipologia nel cruscotto */
 .ctipi{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:-4px 0 16px}
 .ctipi .btn{padding:4px 12px}
+
+/* postazioni di inserimento e consultazione */
+.locale .solo-server{display:none!important}
+.stato-copia{display:block;margin-top:4px;font-size:.85rem;color:var(--muted)}

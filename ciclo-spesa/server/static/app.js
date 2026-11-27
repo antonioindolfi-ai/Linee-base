@@ -61,10 +61,19 @@ async function api(method, path, body) {
   if (!r.ok) throw new ErrApi(r.status, data?.errore || ('Errore ' + r.status));
   return data;
 }
+function bannerBase() {
+  const m = S.me?.modo, st = S.stato || {};
+  if (m === 'consultazione') {
+    const quando = st.pubblicata ? fmtTs(st.pubblicata * 1000) : 'data non disponibile';
+    return banner(st.errore ? 'warn' : 'info', `<b>Consultazione in sola lettura.</b> Dati pubblicati da ${esc(st.autore || '—')} il ${quando}. ${st.errore ? esc('Ultimo aggiornamento non riuscito: ' + st.errore + '.') : 'La pagina si aggiorna da sola quando arrivano modifiche.'}`);
+  }
+  if (m === 'inserimento') return st.errore ? banner('warn', `<b>La copia per la consultazione non è aggiornata.</b> ${esc(st.errore)}. Le modifiche sono comunque salvate su questo PC; riprovo in automatico.`) : banner('', '');
+  return banner(canWrite() ? '' : 'info', canWrite() ? '' : 'Profilo di consultazione: puoi vedere le pratiche ma non modificarle.');
+}
 function setOffline(v) {
   if (S.offline === v) return; S.offline = v;
   if (v) banner('warn', '<b>Server non raggiungibile.</b> I dati mostrati potrebbero non essere aggiornati; riprovo in automatico.');
-  else banner(canWrite() ? '' : 'info', canWrite() ? '' : 'Profilo di consultazione: puoi vedere le pratiche ma non modificarle.');
+  else bannerBase();
 }
 function banner(kind, html) { const b = $('#banner'); if (!html) { b.hidden = true; return; } b.innerHTML = `<div class="container"><div class="alert alert-${kind === 'warn' ? 'warning' : 'info'}" role="status">${html}</div></div>`; b.hidden = false; }
 
@@ -84,7 +93,8 @@ async function caricaDettaglio(id) {
 async function controllaNovita() {
   if (document.hidden || !S.me) return;
   try {
-    const {rev} = await api('GET', '/api/rev');
+    const {rev, stato} = await api('GET', '/api/rev');
+    if (stato) { S.stato = stato; if (!S.offline) bannerBase(); const sc = $('#stato-copia'); if (sc) sc.innerHTML = statoCopiaHtml(); }
     if (rev !== S.rev) { await caricaTutto(); if (S.open && !S.newMode) await caricaDettaglio(S.open); }
   } catch { /* gestito in api() */ }
 }
@@ -142,7 +152,7 @@ function renderCruscotto() {
   const sosp = ap.filter(p => p.sospesa);
   const anno = String(new Date().getFullYear());
   const concl = [...S.pratiche.values()].filter(p => perTipo(p) && (p.fase ?? 0) >= CONCLUSA && String(p.esercizio || '') === anno);
-  let h = `<div class="section-h"><h2>Cruscotto</h2><p>Pratiche aperte per fase. Apri una scheda per spuntare gli adempimenti e far avanzare la pratica.</p></div>
+  let h = `<div class="section-h"><h2>Cruscotto</h2><p>Pratiche aperte per fase. Apri una scheda per spuntare gli adempimenti e far avanzare la pratica.${S.me?.modo === 'inserimento' ? `<span class="stato-copia" id="stato-copia">${statoCopiaHtml()}</span>` : ''}</p></div>
   ${S.pratiche.size ? `<div class="ctipi" role="group" aria-label="Mostra per tipologia"><span class="mut sm">Mostra:</span>${[['', 'Tutte'], ...ALL.map(k => [k, k === 'beni' ? 'Fatture commerciali' : TIPI[k].n])].map(([k, n]) => `<button type="button" class="btn btn-sm ${ct === k ? 'btn-primary' : 'btn-outline-primary'}" data-ctipo="${k}" aria-pressed="${ct === k}">${esc(n)}</button>`).join('')}</div>` : ''}
   <div class="stats">
     <button class="stat" data-goto="aperte"><span class="lbl">Aperte</span><span class="val num">${ap.length}</span><span class="sub num">${eur(somma(ap))}</span></button>
@@ -169,6 +179,12 @@ function renderCruscotto() {
     h += '</div>';
   }
   el.innerHTML = h;
+}
+function statoCopiaHtml() {
+  if (S.me?.modo !== 'inserimento') return '';
+  const st = S.stato || {};
+  return st.errore ? '<span class="txt-bad">Copia per la consultazione non aggiornata: riprovo in automatico.</span>'
+    : st.ultima ? `Copia per la consultazione aggiornata il ${fmtTs(st.ultima * 1000)}.` : 'Copia per la consultazione in preparazione.';
 }
 function card(p) {
   const a = avanzamento(p); const rif = termineRifiuto(p);
@@ -263,6 +279,11 @@ async function renderUtenti() {
     <td><select class="form-select" data-ruolo="${u.id}" aria-label="Ruolo di ${esc(u.nome)}" ${u.id === S.me.id ? 'disabled' : ''}>${Object.entries(RUOLI).map(([k, v]) => `<option value="${k}" ${u.ruolo === k ? 'selected' : ''}>${v}</option>`).join('')}</select></td>
     <td>${u.attivo ? '<span class="badge text-bg-success">Attiva</span>' : '<span class="badge badge-neutro">Disattivata</span>'}</td>
     <td><div class="actions tight">${u.id !== S.me.id ? `<button class="btn btn-outline-primary btn-sm" data-attiva="${u.id}" data-val="${u.attivo ? 0 : 1}" type="button">${u.attivo ? 'Disattiva' : 'Riattiva'}</button><button class="btn btn-outline-primary btn-sm" data-reset="${u.id}" type="button">Reimposta password</button>` : ''}</div></td></tr>`).join('');
+  if (S.me.modo === 'inserimento') {
+    el.innerHTML = `<div class="section-h"><h2>Registro</h2><p>Tutte le operazioni fatte su questa postazione. Sulla postazione non ci sono altre utenze: si entra con l'accesso a Windows.</p></div>
+    <div class="panel"><div class="tbl-wrap"><table class="table compact"><thead><tr><th>Data e ora</th><th>Utente</th><th>Pratica</th><th>Operazione</th></tr></thead><tbody id="reg-body"><tr><td colspan="4" class="mut">Caricamento…</td></tr></tbody></table></div></div>`;
+    return caricaRegistro();
+  }
   el.innerHTML = `<div class="section-h"><h2>Utenti e registro</h2><p>Gestisci chi accede all'applicazione e consulta il registro di tutte le operazioni.</p></div>
   <div class="grid2"><div class="panel"><h3>Utenze</h3>${sec}
     <div class="tbl-wrap"><table class="table compact"><thead><tr><th>Utente</th><th>Ruolo</th><th>Stato</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>
@@ -273,6 +294,9 @@ async function renderUtenti() {
     <div class="fld"><label for="u-ruolo">Ruolo</label><select class="form-select" id="u-ruolo">${Object.entries(RUOLI).map(([k, v]) => `<option value="${k}" ${k === 'operatore' ? 'selected' : ''}>${v}</option>`).join('')}</select></div>
     <button class="btn btn-primary" type="submit">Crea utenza</button></form></div>
   <div class="panel mt12"><h3>Registro delle operazioni</h3><p class="mut sm">Ultime 500 operazioni, comprese quelle sulle utenze e sulle pratiche eliminate.</p><div class="tbl-wrap"><table class="table compact"><thead><tr><th>Data e ora</th><th>Utente</th><th>Pratica</th><th>Operazione</th></tr></thead><tbody id="reg-body"><tr><td colspan="4" class="mut">Caricamento…</td></tr></tbody></table></div></div>`;
+  return caricaRegistro();
+}
+async function caricaRegistro() {
   try {
     const reg = await api('GET', '/api/registro');
     const body = $('#reg-body'); if (!body) return;
@@ -721,7 +745,12 @@ async function avvio() {
   $('#acc-name').textContent = S.me.nome; $('#acc-role').textContent = '· ' + RUOLI[S.me.ruolo];
   document.body.classList.toggle('ro', !canWrite());
   document.body.classList.toggle('no-admin', !isAdmin());
-  banner(canWrite() ? '' : 'info', canWrite() ? '' : 'Profilo di consultazione: puoi vedere le pratiche ma non modificarle.');
+  S.stato = S.me.stato || null;
+  const locale = !!S.me.modo && S.me.modo !== 'server';
+  document.body.classList.toggle('locale', locale);
+  if (S.me.modo === 'inserimento') { $('#acc-role').textContent = '· Postazione di inserimento'; $('#tab-utenti').textContent = 'Registro'; }
+  if (S.me.modo === 'consultazione') $('#acc-role').textContent = '· Consultazione';
+  bannerBase();
   try { await caricaTutto(); } catch { /* gestito in api() */ }
   route();
   clearInterval(S.poll); S.poll = setInterval(controllaNovita, 10000);

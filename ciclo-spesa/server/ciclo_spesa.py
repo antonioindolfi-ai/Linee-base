@@ -5,7 +5,11 @@ Usa solo la libreria standard di Python (3.8 o successivo): nessun pacchetto
 da installare e nessuna connessione verso l'esterno. I dati restano in un file
 SQLite sul server; la pagina, i caratteri e gli script sono serviti da qui.
 
-Comandi:
+Uso su un solo PC, con copia per la consultazione sulla cartella condivisa:
+  python ciclo_spesa.py inserimento --condivisa CARTELLA      (PC di chi inserisce)
+  python ciclo_spesa.py consultazione --condivisa CARTELLA    (PC di chi consulta)
+
+Uso come server per piu' utenti:
   python ciclo_spesa.py crea-admin USERNAME
   python ciclo_spesa.py avvia [--host 0.0.0.0] [--porta 8080] [--cert C --key K]
   python ciclo_spesa.py reimposta-password USERNAME
@@ -27,11 +31,20 @@ import ssl
 import sys
 import threading
 import time
+import shutil
 import urllib.parse
+import webbrowser
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 STATIC = os.path.join(BASE, "static")
 DB_DEFAULT = os.path.join(BASE, "dati", "ciclo_spesa.sqlite3")
+NOME_COPIA = "ciclo_spesa_consultazione.sqlite3"
+
+
+def cartella_utente():
+    """Cartella privata dell'utente di Windows (o di Linux) per i dati locali dell'app."""
+    base = os.environ.get("LOCALAPPDATA") or os.path.join(os.path.expanduser("~"), ".local", "share")
+    return os.path.join(base, "CicloSpesa")
 
 with open(os.path.join(STATIC, "modello.json"), encoding="utf-8") as _f:
     MODELLO = json.load(_f)
@@ -136,6 +149,7 @@ class Archivio:
         """)
         # Hash fittizio per rendere uniforme il tempo di risposta del login.
         self._finto = hash_password("password-inesistente")
+        self.al_cambio = None  # funzione chiamata a ogni modifica (pubblicazione della copia)
 
     # ---- utilita ----
     def rev(self):
@@ -143,6 +157,55 @@ class Archivio:
 
     def _bump(self):
         self.c.execute("UPDATE meta SET v = CAST(v AS INTEGER) + 1 WHERE k='rev'")
+        if self.al_cambio:
+            self.al_cambio()
+
+    def meta(self, k):
+        r = self.c.execute("SELECT v FROM meta WHERE k=?", (k,)).fetchone()
+        return r[0] if r else None
+
+    def utente_locale(self, username, nome):
+        """Utenza che rappresenta l'utente di Windows nella modalita' inserimento."""
+        with self.lock:
+            r = self.c.execute("SELECT * FROM utenti WHERE username=?", (username,)).fetchone()
+            if not r:
+                salt, h = hash_password(secrets.token_urlsafe(32))  # password inutilizzabile: si entra solo dal PC
+                self.c.execute("INSERT INTO utenti(username, nome, ruolo, salt, hash, cambio_password, creato) VALUES(?,?,?,?,?,0,?)",
+                               (username, nome, "admin", salt, h, time.time()))
+                self.evento(None, None, "Prima apertura della postazione di inserimento da parte di %s" % nome)
+                r = self.c.execute("SELECT * FROM utenti WHERE username=?", (username,)).fetchone()
+            return dict(r)
+
+    def pubblica(self, cartella, autore):
+        """Scrive sulla cartella condivisa una copia coerente per la consultazione, senza password ne' sessioni."""
+        tmp = os.path.join(cartella, ".%s.%s.tmp" % (NOME_COPIA, secrets.token_hex(4)))
+        try:
+            dst = sqlite3.connect(tmp)
+            try:
+                with self.lock:
+                    self.c.backup(dst)
+                dst.execute("PRAGMA journal_mode=DELETE")
+                dst.execute("DELETE FROM sessioni")
+                dst.execute("UPDATE utenti SET salt=x'', hash=x'', fallimenti=0, bloccato_fino=0")
+                dst.execute("INSERT OR REPLACE INTO meta(k, v) VALUES('pubblicata', ?)", (str(time.time()),))
+                dst.execute("INSERT OR REPLACE INTO meta(k, v) VALUES('autore', ?)", (autore,))
+                dst.commit()
+                dst.execute("VACUUM")
+            finally:
+                dst.close()
+            for _ in range(10):
+                try:
+                    os.replace(tmp, os.path.join(cartella, NOME_COPIA))
+                    return
+                except PermissionError:  # su Windows: copia aperta in quel momento da chi consulta
+                    time.sleep(0.5)
+            raise OSError("la copia sulla cartella condivisa e' in uso, riprovo tra poco")
+        finally:
+            if os.path.exists(tmp):
+                try:
+                    os.remove(tmp)
+                except OSError:
+                    pass
 
     def evento(self, uid, pid, msg):
         self.c.execute("INSERT INTO eventi(ts, utente_id, pratica_id, msg) VALUES(?,?,?,?)",
@@ -499,6 +562,13 @@ class Gestore(http.server.BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
     archivio = None
     cookie_secure = False
+    modo = "server"          # "server", "inserimento" oppure "consultazione"
+    porta = 0
+    token_avvio = None       # codice del collegamento aperto all'avvio (modalita' locali)
+    sessioni_locali = set()
+    utente = None            # utente della postazione (modalita' locali)
+    pubblicatore = None
+    lettore = None
 
     def log_message(self, fmt, *args):
         sys.stderr.write("%s [%s] %s\n" % (self.client_address[0], self.log_date_time_string(), fmt % args))
@@ -529,8 +599,11 @@ class Gestore(http.server.BaseHTTPRequestHandler):
                 return v
         return None
 
+    def _nome_cookie(self):
+        return "cs_sess" if self.modo == "server" else "cs_loc_%d" % self.porta
+
     def _set_cookie(self, valore, max_age):
-        c = "cs_sess=%s; Path=/; HttpOnly; SameSite=Strict; Max-Age=%d" % (valore, max_age)
+        c = "%s=%s; Path=/; HttpOnly; SameSite=Strict; Max-Age=%d" % (self._nome_cookie(), valore, max_age)
         if self.cookie_secure:
             c += "; Secure"
         return ("Set-Cookie", c)
@@ -563,9 +636,38 @@ class Gestore(http.server.BaseHTTPRequestHandler):
     def do_DELETE(self):
         self._gestisci("DELETE")
 
+    def _sessione_locale(self):
+        t = self._cookie(self._nome_cookie())
+        return bool(t) and any(hmac.compare_digest(t, x) for x in self.sessioni_locali)
+
+    def _pagina(self, stato, titolo, testo, extra=None):
+        b = ("<!doctype html><html lang=\"it\"><head><meta charset=\"utf-8\"><title>Ciclo della spesa</title>"
+             "<link rel=\"stylesheet\" href=\"/vendor/bootstrap-italia/css/bootstrap-italia.min.css\"></head>"
+             "<body><main class=\"container py-5\"><h1 class=\"h3\">%s</h1><p>%s</p></main></body></html>" % (titolo, testo)).encode("utf-8")
+        self._intestazioni(stato, "text/html; charset=utf-8", len(b), extra)
+        self.wfile.write(b)
+
     def _gestisci(self, metodo):
-        path = urllib.parse.urlsplit(self.path).path
+        parti = urllib.parse.urlsplit(self.path)
+        path = parti.path
         try:
+            if self.modo != "server":
+                # Solo questo computer: rifiuta richieste arrivate con un nome diverso (difesa dal DNS rebinding).
+                if self.headers.get("Host") not in ("127.0.0.1:%d" % self.porta, "localhost:%d" % self.porta):
+                    raise Errore(403, "Richiesta non consentita.")
+                if path == "/accesso" and metodo == "GET":
+                    t = urllib.parse.parse_qs(parti.query).get("t", [""])[0]
+                    if not (self.token_avvio and hmac.compare_digest(t, self.token_avvio)):
+                        return self._pagina(403, "Collegamento non valido",
+                                            "Apri l'applicazione dal collegamento mostrato nella finestra del programma, oppure chiudi il programma e avvialo di nuovo.")
+                    s = secrets.token_urlsafe(32)
+                    self.sessioni_locali.add(s)
+                    return self._pagina(200, "Ciclo della spesa", "<a href=\"/\">Apri l'applicazione</a>",
+                                        [self._set_cookie(s, 12 * 3600), ("Refresh", "0; url=/")])
+                if path in ("/", "/index.html") and not self._sessione_locale():
+                    return self._pagina(403, "Apri l'applicazione dal programma",
+                                        "Per motivi di sicurezza l'applicazione si apre solo dal collegamento mostrato nella finestra del programma "
+                                        "(o automaticamente all'avvio). Se hai chiuso il browser, usa quel collegamento oppure chiudi e riavvia il programma.")
             if path.startswith("/api/"):
                 self._api(metodo, path)
             elif metodo == "GET":
@@ -602,6 +704,9 @@ class Gestore(http.server.BaseHTTPRequestHandler):
                 raise Errore(403, "Richiesta non consentita.")
         body = self._body() if metodo in ("POST", "PATCH") else {}
 
+        if self.modo != "server":
+            return self._api_locale(metodo, path, body)
+
         if path == "/api/login" and metodo == "POST":
             u = A.verifica(str(body.get("username") or ""), str(body.get("password") or ""))
             if not u:
@@ -629,12 +734,35 @@ class Gestore(http.server.BaseHTTPRequestHandler):
 
         if path == "/api/me" and metodo == "GET":
             return self._json(200, {"id": me["id"], "username": me["username"], "nome": me["nome"],
-                                    "ruolo": me["ruolo"], "cambio_password": bool(me["cambio_password"])})
+                                    "ruolo": me["ruolo"], "cambio_password": bool(me["cambio_password"]), "modo": "server"})
         if me["cambio_password"]:
             raise Errore(403, "Prima di continuare devi impostare una nuova password.")
-
         if path == "/api/rev" and metodo == "GET":
             return self._json(200, {"rev": A.rev()})
+        return self._api_dati(A, me, metodo, path, body)
+
+    def _api_locale(self, metodo, path, body):
+        if not self._sessione_locale():
+            raise Errore(401, "Apri l'applicazione dal collegamento mostrato nella finestra del programma.")
+        if self.lettore:
+            self.lettore.aggiorna()
+        A = self.archivio
+        if A is None:
+            raise Errore(503, "Nessuna copia disponibile: " + (self.lettore.errore or "cartella condivisa non raggiungibile."))
+        me = self.utente
+        stato = self.pubblicatore.stato() if self.pubblicatore else self.lettore.stato()
+        if path == "/api/me" and metodo == "GET":
+            return self._json(200, {"id": me["id"], "username": me["username"], "nome": me["nome"], "ruolo": me["ruolo"],
+                                    "cambio_password": False, "modo": self.modo, "stato": stato})
+        if path == "/api/rev" and metodo == "GET":
+            return self._json(200, {"rev": A.rev(), "stato": stato})
+        if path.startswith(("/api/login", "/api/logout", "/api/password")) or (path.startswith("/api/utenti") and metodo != "GET"):
+            raise Errore(403, "Operazione non prevista sulla postazione.")
+        return self._api_dati(A, me, metodo, path, body)
+
+    def _api_dati(self, A, me, metodo, path, body):
+        admin = me["ruolo"] == "admin"
+        scrittura = me["ruolo"] in ("admin", "operatore")
         if path == "/api/utenti" and metodo == "GET":
             return self._json(200, A.utenti(admin))
         if path == "/api/pratiche" and metodo == "GET":
@@ -679,6 +807,83 @@ class Server(http.server.ThreadingHTTPServer):
     daemon_threads = True
 
 
+class Pubblicatore(threading.Thread):
+    """Aggiorna la copia per la consultazione poco dopo ogni modifica."""
+
+    def __init__(self, archivio, cartella, autore):
+        super().__init__(daemon=True)
+        self.A, self.cartella, self.autore = archivio, cartella, autore
+        self.ev = threading.Event()
+        self.ultima = None
+        self.errore = None
+        archivio.al_cambio = self.ev.set
+
+    def esegui(self):
+        try:
+            if not os.path.isdir(self.cartella):
+                raise OSError("cartella non raggiungibile: %s" % self.cartella)
+            self.A.pubblica(self.cartella, self.autore)
+            self.ultima, self.errore = time.time(), None
+        except Exception as e:
+            self.errore = str(e)
+            threading.Timer(30, self.ev.set).start()  # nuovo tentativo tra 30 secondi
+
+    def run(self):
+        while True:
+            self.ev.wait()
+            time.sleep(2)  # raccoglie le modifiche ravvicinate in una sola copia
+            self.ev.clear()
+            self.esegui()
+
+    def stato(self):
+        return {"ultima": self.ultima, "errore": self.errore}
+
+
+class Lettore:
+    """Nella consultazione: copia in locale la versione pubblicata e la ricarica quando cambia."""
+
+    def __init__(self, cartella, locale_dir):
+        self.sorgente = os.path.join(cartella, NOME_COPIA)
+        self.locale_dir = locale_dir
+        self.firma = None
+        self.turno = 0
+        self.errore = None
+        self.verificato = 0
+        self.lock = threading.Lock()
+
+    def aggiorna(self, forza=False):
+        with self.lock:
+            if not forza and time.time() - self.verificato < 5:
+                return
+            self.verificato = time.time()
+            try:
+                st = os.stat(self.sorgente)
+                firma = (st.st_mtime, st.st_size)
+                if firma == self.firma and Gestore.archivio is not None:
+                    self.errore = None
+                    return
+                self.turno = 1 - self.turno  # due file alternati: su Windows non si sovrascrive un file aperto
+                dest = os.path.join(self.locale_dir, "consultazione-%s.sqlite3" % "ab"[self.turno])
+                for est in ("", "-wal", "-shm"):
+                    if os.path.exists(dest + est):
+                        os.remove(dest + est)
+                shutil.copyfile(self.sorgente, dest)
+                vecchio = Gestore.archivio
+                Gestore.archivio = Archivio(dest)
+                if vecchio is not None:
+                    threading.Timer(10, vecchio.c.close).start()
+                self.firma, self.errore = firma, None
+            except FileNotFoundError:
+                self.errore = "nella cartella condivisa non c'e' ancora una copia pubblicata (%s)" % self.sorgente
+            except OSError as e:
+                self.errore = "cartella condivisa non raggiungibile: %s" % e
+
+    def stato(self):
+        A = Gestore.archivio
+        pub = A.meta("pubblicata") if A else None
+        return {"pubblicata": float(pub) if pub else None, "autore": (A.meta("autore") if A else None), "errore": self.errore}
+
+
 # --------------------------------------------------------------------------
 # Riga di comando
 # --------------------------------------------------------------------------
@@ -696,7 +901,7 @@ def chiedi_password():
 
 def main():
     ap = argparse.ArgumentParser(description="Ciclo della spesa - server per la rete interna")
-    ap.add_argument("--db", default=DB_DEFAULT, help="file del database (predefinito: dati/ciclo_spesa.sqlite3)")
+    ap.add_argument("--db", default=None, help="file del database (predefinito: dati/ciclo_spesa.sqlite3; per l'inserimento, la cartella CicloSpesa nel profilo dell'utente)")
     sub = ap.add_subparsers(dest="cmd")
     a = sub.add_parser("avvia", help="avvia il server")
     a.add_argument("--host", default="127.0.0.1", help="indirizzo di ascolto; 0.0.0.0 per la rete interna (predefinito 127.0.0.1)")
@@ -711,12 +916,26 @@ def main():
     r.add_argument("username")
     b = sub.add_parser("backup", help="copia coerente del database, anche a server avviato")
     b.add_argument("destinazione")
+    i = sub.add_parser("inserimento", help="postazione di chi inserisce: solo su questo PC, con copia per la consultazione sulla condivisa")
+    i.add_argument("--condivisa", required=True, help="cartella della condivisa riservata alla consultazione")
+    i.add_argument("--porta", type=int, default=8765)
+    i.add_argument("--non-aprire", action="store_true", help="non aprire automaticamente il browser")
+    k = sub.add_parser("consultazione", help="postazione di chi consulta: sola lettura della copia sulla condivisa")
+    k.add_argument("--condivisa", required=True, help="cartella della condivisa in cui si trova la copia")
+    k.add_argument("--porta", type=int, default=8766)
+    k.add_argument("--non-aprire", action="store_true", help="non aprire automaticamente il browser")
     args = ap.parse_args()
+    try:
+        sys.stdout.reconfigure(errors="replace")
+    except Exception:
+        pass
     if not args.cmd:
         ap.print_help()
         return 1
+    if args.cmd in ("inserimento", "consultazione"):
+        return postazione(args)
 
-    A = Archivio(args.db)
+    A = Archivio(args.db or DB_DEFAULT)
     if args.cmd == "crea-admin":
         nome = input("Nome e cognome da mostrare: ").strip()
         A.crea_utente(args.username, nome, "admin", chiedi_password(), cambio=False)
@@ -749,7 +968,7 @@ def main():
         ctx.load_cert_chain(args.cert, args.key)
         srv.socket = ctx.wrap_socket(srv.socket, server_side=True)
         schema = "https"
-    print("Ciclo della spesa in ascolto su %s://%s:%d  (database: %s)" % (schema, args.host, args.porta, os.path.abspath(args.db)))
+    print("Ciclo della spesa in ascolto su %s://%s:%d  (database: %s)" % (schema, args.host, args.porta, os.path.abspath(args.db or DB_DEFAULT)))
     if A.in_rete:
         print("ATTENZIONE: il database si trova su una cartella di rete. Chiunque abbia accesso a quella cartella\n"
               "puo' leggere il file direttamente, senza passare dalle utenze dell'applicazione, e SQLite su rete\n"
@@ -760,6 +979,64 @@ def main():
         srv.serve_forever()
     except KeyboardInterrupt:
         print("\nServer arrestato.")
+    return 0
+
+
+def postazione(args):
+    """Modalita' inserimento e consultazione: l'app risponde solo a questo computer."""
+    utente_win = getpass.getuser()
+    privata = cartella_utente()
+    os.makedirs(privata, exist_ok=True)
+    if os.name == "posix":
+        os.chmod(privata, 0o700)
+    condivisa = os.path.abspath(args.condivisa) if not args.condivisa.startswith(("\\\\", "//")) else args.condivisa
+    Gestore.modo, Gestore.porta = args.cmd, args.porta
+    Gestore.token_avvio = secrets.token_urlsafe(24)
+
+    if args.cmd == "inserimento":
+        db = args.db or os.path.join(privata, "inserimento.sqlite3")
+        if percorso_di_rete(db):
+            print("Il database di lavoro deve stare su questo PC, non su una cartella di rete. Indica un percorso locale con --db.")
+            return 1
+        A = Archivio(db)
+        Gestore.archivio = A
+        Gestore.utente = A.utente_locale("win-" + re.sub(r"[^A-Za-z0-9._-]", "_", utente_win)[:36], utente_win)
+        p = Pubblicatore(A, condivisa, utente_win)
+        Gestore.pubblicatore = p
+        p.start()
+        p.esegui()  # copia iniziale
+        print("Postazione di INSERIMENTO di %s" % utente_win)
+        print("  Database di lavoro (solo su questo PC): %s" % os.path.abspath(db))
+        print("  Copia per la consultazione: %s" % os.path.join(condivisa, NOME_COPIA))
+        if p.errore:
+            print("  ATTENZIONE: copia non scritta (%s). Riprovo in automatico." % p.errore)
+    else:
+        L = Lettore(condivisa, privata)
+        Gestore.lettore = L
+        L.aggiorna(forza=True)
+        Gestore.utente = {"id": 0, "username": "consultazione", "nome": utente_win, "ruolo": "lettura", "cambio_password": 0}
+        print("Postazione di CONSULTAZIONE di %s (sola lettura)" % utente_win)
+        print("  Copia letta da: %s" % L.sorgente)
+        if L.errore:
+            print("  ATTENZIONE: %s" % L.errore)
+
+    try:
+        srv = Server(("127.0.0.1", args.porta), Gestore)
+    except OSError:
+        print("La porta %d e' gia' in uso: forse il programma e' gia' aperto. Chiudi l'altra finestra e riprova." % args.porta)
+        return 1
+    url = "http://127.0.0.1:%d/accesso?t=%s" % (args.porta, Gestore.token_avvio)
+    print("  L'applicazione risponde solo a questo computer. Per aprirla:")
+    print("  " + url)
+    print("  Per chiudere: Ctrl+C in questa finestra" + (" (le modifiche sono gia' salvate)." if args.cmd == "inserimento" else "."))
+    if not args.non_aprire:
+        threading.Timer(0.8, webbrowser.open, (url,)).start()
+    try:
+        srv.serve_forever()
+    except KeyboardInterrupt:
+        if Gestore.pubblicatore:
+            Gestore.pubblicatore.esegui()  # ultima copia aggiornata prima di chiudere
+        print("\nProgramma chiuso.")
     return 0
 
 

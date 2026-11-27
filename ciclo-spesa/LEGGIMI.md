@@ -22,6 +22,44 @@ Il nome dell'amministrazione e della struttura che compaiono nell'intestazione e
 }
 ```
 
+## Due modi di usare l'applicazione
+
+1. **Postazione di inserimento + postazione di consultazione** (sezione seguente): l'app gira solo sul PC di chi inserisce; sulla cartella condivisa viene salvata una copia che una seconda persona consulta in sola lettura dal proprio PC. Non serve un server.
+2. **Server per più utenti** (sezioni «Installazione» e successive): un computer sempre acceso a cui i colleghi si collegano dal browser con utenze e password.
+
+## Postazione di inserimento e postazione di consultazione
+
+**Come funziona**
+
+- Sul PC di chi inserisce si avvia `avvia-inserimento.bat`. L'app si apre nel browser e **risponde solo a quel PC**: non è raggiungibile dalla rete. Si entra con l'accesso a Windows, senza altre password.
+- Il **database di lavoro** sta nel profilo Windows di chi inserisce (`%LOCALAPPDATA%\CicloSpesa\inserimento.sqlite3`), non nella condivisa.
+- A ogni modifica, dopo un paio di secondi, l'app scrive sulla cartella condivisa la **copia per la consultazione** `ciclo_spesa_consultazione.sqlite3`. La copia non contiene password né sessioni. Viene aggiornata anche alla chiusura del programma.
+- Sul PC di chi consulta si avvia `avvia-consultazione.bat`. L'app legge la copia **in sola lettura**: si vedono pratiche, fasi, scadenze, cronologia e guida, ma non si può modificare nulla. La pagina si aggiorna da sola quando arriva una nuova copia.
+- Se il PC di chi inserisce è spento, chi consulta vede l'ultima copia pubblicata, con la data indicata in alto.
+
+**Preparazione**
+
+1. Copiare la cartella `server` sui due PC, per esempio in `Documenti\CicloSpesa`. Su entrambi serve **Python 3.8 o successivo**: se non è installato, va chiesto ai sistemi informativi.
+2. Creare sulla condivisa una cartella dedicata, per esempio `CicloSpesa`, e **restringerne i permessi** (vedi sotto).
+3. Nei file `avvia-inserimento.bat` e `avvia-consultazione.bat` scrivere il percorso di quella cartella nella riga `set CONDIVISA=...`, ad esempio `set CONDIVISA=\\SERVER-FILE\Ufficio1\CicloSpesa`.
+4. Avviare con un doppio clic. Il browser si apre da solo; se lo si chiude, si riapre dal collegamento mostrato nella finestra nera del programma. Per chiudere: Ctrl+C nella finestra.
+
+**Permessi della cartella sulla condivisa (passaggio decisivo)**
+
+Chi può leggere la copia lo decidono i permessi di Windows su quella cartella, non l'applicazione. La cartella deve essere accessibile solo alle due persone:
+
+1. tasto destro sulla cartella → Proprietà → Sicurezza → Avanzate;
+2. «Disabilita ereditarietà» e rimuovere i gruppi generici (ad esempio Everyone, Utenti, Utenti del dominio);
+3. aggiungere **chi inserisce** con permesso «Modifica» e **chi consulta** con permesso «Lettura ed esecuzione».
+
+Se non si hanno i diritti per farlo, va chiesto ai sistemi informativi. Gli amministratori del server dei file conservano comunque l'accesso tecnico alla cartella, come per qualsiasi altro file dell'amministrazione.
+
+**Cosa resta da sapere**
+
+- La copia contiene le pratiche, la cronologia e il nome Windows di chi ha fatto le operazioni.
+- Il database di lavoro è il documento «originale»: conviene farne una copia di sicurezza periodica con `python ciclo_spesa.py --db "%LOCALAPPDATA%\CicloSpesa\inserimento.sqlite3" backup DESTINAZIONE`, verso una posizione altrettanto riservata.
+- Chi usa la sessione Windows di chi inserisce può usare l'app: va bloccato il PC quando ci si allontana.
+
 ## Riservatezza: perché i dati non escono
 
 Cosa garantisce l'applicazione:
