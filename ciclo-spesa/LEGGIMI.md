@@ -50,7 +50,7 @@ La cartella condivisa può contenere la copia del programma, ma **il database no
 
 Per questo:
 
-1. collocate il database su un disco locale del computer che esegue il server, in una cartella accessibile solo all'utenza che lo esegue, con l'opzione `--db`, ad esempio `python ciclo_spesa.py --db D:\\ciclo-spesa-dati\\ciclo_spesa.sqlite3 avvia --host 0.0.0.0`;
+1. collocate il database su un disco locale del computer che esegue il server, in una cartella accessibile solo all'utenza che lo esegue, con l'opzione `--db`, ad esempio `python ciclo_spesa.py --db D:\ciclo-spesa-dati\ciclo_spesa.sqlite3 avvia --host 0.0.0.0`;
 2. se il database viene comunque indicato su una cartella di rete, il server lo segnala all'avvio;
 3. conservate i backup in una posizione con accesso altrettanto ristretto;
 4. concordate con i sistemi informativi computer, porta, accesso dalla rete interna e certificato HTTPS.
